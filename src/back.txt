@@ -1,0 +1,421 @@
+#include <iostream>
+#include <cstring>
+
+#include "CertificateAndCrl.h"
+#include "Common.h"
+#include "CommonError.h"
+#include "Init.h"
+
+using namespace std;
+
+int main(){
+
+    /* Load the human readable error strings for libcrypto */
+    ERR_load_crypto_strings();
+    /* Load all digest and cipher algorithms */
+    OpenSSL_add_all_algorithms();
+
+    char *id = "12345678";
+    size_t idlen = strlen(id);
+    unsigned char* msg = "yaozhihan";
+    size_t mlen = strlen(msg);
+    unsigned char *sig = (unsigned char* )CALLOC(1, 72);
+    size_t siglen = 0;
+    unsigned char *ciphertext = NULL;
+    int clen = 0;
+    unsigned char *plaintext = NULL;
+    int plen = 0;
+    unsigned char *hash = NULL;
+    size_t hlen = 0;
+    unsigned char *sm4cip = NULL;
+    int sm4ciplen = 0;
+    unsigned char *sm4plain = NULL;
+    int sm4plainlen = 0;
+    unsigned char *skey = NULL;
+    size_t skeylen = 0;
+
+    /*
+    EC_KEY* mkey = CreateSm2KeyPair();
+    EC_KEY* okey = CreateSm2KeyPair();
+
+    for (int j = 0; j<5; j++) {
+        cout<<"-------------------------------------------------------------------"<<endl;
+        if (0 != DeriveKey(mkey, okey, &skey, &skeylen)) {
+            printf("DeriveSm4Key fail\n");
+            return 0;
+        }
+        printf("EVP_PKEY_derive succ = %d\n", skeylen);
+        for (i = 0; i < skeylen; i++) {
+            printf("0x%x ", *(skey + i));
+        }
+        printf("\n\n");
+    }
+    */
+/*
+    unsigned char *sm4key ="01234567890123456";
+    unsigned char *iv = "01234567890123456";
+    
+    printf("msg  = %d\n", mlen);
+    for (int i = 0; i < mlen; i++) {
+        printf("%c", *(msg + i));
+    }
+    printf("\n\n");
+    */
+/*
+    for (int j = 0; j<5; j++) {
+        cout<<"----------------------------------------------------------------------------"<<endl;
+        if (0 != EncryptDataBySm4Cbc(msg, mlen, sm4key, iv, &sm4cip, &sm4ciplen)) {
+            printf("EncryptDataBySm4Cbc fail\n");
+            return 0;
+        }
+        printf("EncryptDataBySm4Cbc succ = %d\n", sm4ciplen);
+        for (i = 0; i < sm4ciplen; i++) {
+            printf("0x%x ", *(sm4cip + i));
+        }
+        printf("\n\n");
+
+        if(0 != DecryptDataBySm4Cbc(sm4cip, sm4ciplen, sm4key, iv, &sm4plain, &sm4plainlen)) {
+            printf("DecryptDataBySm4Cbc fail\n");
+            return 0;
+        }
+        printf("DecryptDataBySm4Cbc succ = %d\n", sm4plainlen);
+        for (i = 0; i < sm4plainlen; i++) {
+            printf("%c", *(sm4plain + i));
+        }
+        printf("\n\n");
+    }
+    */
+/*
+    for (int j = 0; j<5; j++) {
+        cout<<"----------------------------------------------------------------------------"<<endl;
+        if (0 != EncryptDataBySm4Ecb(msg, mlen, sm4key, &sm4cip, &sm4ciplen)) {
+            printf("EncryptDataBySm4Ecb fail\n");
+            return 0;
+        }
+        printf("EncryptDataBySm4Ecb succ = %d\n", sm4ciplen);
+        for (i = 0; i < sm4ciplen; i++) {
+            printf("0x%x ", *(sm4cip + i));
+        }
+        printf("\n\n");
+
+        if(0 != DecryptDataBySm4Ecb(sm4cip, sm4ciplen, sm4key, &sm4plain, &sm4plainlen)) {
+            printf("DecryptDataBySm4Ecb fail\n");
+            return 0;
+        }
+        printf("DecryptDataBySm4Ecb succ = %d\n", sm4plainlen);
+        for (i = 0; i < sm4plainlen; i++) {
+            printf("%c", *(sm4plain + i));
+        }
+        printf("\n\n");
+    }
+    */
+    
+//  EC_KEY* key = CreateSm2KeyPair();
+//  if (!key) {
+//      printf("key empty\n");
+//      return 0;
+//  }
+//  printf("CreateSm2KeyPair succ\n\n");
+
+//  unsigned char* public_key = NULL;
+//  public_key = get_sm2_public_key(key);
+//  if (!public_key) {
+//      perror("get_sm2_public_key fail\n");
+//      return 0;
+//  }
+//  for (int i = 0; i < 65; i++) {
+//      printf("0x%02x ", *(public_key + i));
+//  }
+//  printf("\n");
+//
+//  unsigned char* pri_key = NULL;
+//  pri_key = get_sm2_private_key(key);
+//  if (!pri_key) {
+//      perror("get_sm2_private_key fail\n");
+//      return 0;
+//  }
+//  for (int i = 0; i < 32; i++) {
+//      printf("0x%02x ", *(pri_key + i));
+//  }
+//  printf("\n");
+
+//  for (int j = 0; j<5; j++) {
+//      cout<<"---------------------------------------------------------------------"<<endl;
+//      printf("SignData start\n");
+//      if(0 != SignData(key, id, msg, mlen, &sig, &siglen)){
+//          printf("SignData fail\n");
+//          return 0;
+//      }
+//      printf("SignData succ\n");
+//      printf("siglen: %d\n", siglen);
+//      for (int i = 0; i<siglen; i++) {
+//          printf("0x%x  ", *(sig+i));
+//      }
+//      printf("\n\n");
+//
+//      printf("VerifySignedData start\n");
+//      if(0 != VerifySignedData(key, sig, siglen, id, msg, mlen)) {
+//          printf("VerifySignedData fail\n");
+//          return 0;
+//      }
+//      printf("VerifySignedData succ\n\n");
+//  }
+
+    /*
+    for (int j = 0; j<5; j++) {
+        cout<<"----------------------------------------------------------------------------"<<endl;
+        printf("EncryptData start\n");
+        if(0 != EncryptData(key, msg, mlen, &ciphertext, &clen)) {
+            printf("EncryptData fail\n");
+            return 0;
+        } 
+        printf("EncryptData succ\n");
+        printf("ciphertext: %d\n", clen);
+         for (i = 0; i<clen; i++) {
+             printf("0x%x  ", *(ciphertext + i));
+         }
+        printf("\n\n");
+
+        printf("DecryptData start\n");
+        if(0 != DecryptData(key, ciphertext, clen, &plaintext, &plen)) {
+            printf("DecryptData fail\n");
+            return 0;
+        } 
+        printf("DecryptData succ\n");
+        printf("plaintext: %d\n", plen);
+        for (i = 0; i<plen; i++) {
+         printf("%c", *(plaintext + i));
+        }
+        printf("\n\n");
+
+        printf("msg:\n%s\n", msg);
+
+        //0 ==strcmp(msg, plaintext)
+        if(0 == memcmp(msg, plaintext, mlen)) {
+            printf("Decrypt succ\n");
+        }else{
+            printf("Decrypt fail\n");
+        }
+        printf("\n");
+    }
+*/
+    /*
+    for (int j = 0; j<5; j++) {
+        cout<<"-------------------------------------------------------"<<endl;
+        if (0 != Sm3Hash(msg, mlen, &hash, &hlen)) {
+            printf("Sm3Hash fail\n");
+            return 0;
+        }
+        printf("hash: %d\n", hlen);
+         for (i = 0; i<hlen; i++) {
+             printf("0x%x  ", *(hash + i));
+         }
+        printf("\n\n");
+    }
+    */
+/*
+
+
+    
+    if(key) {
+        EC_KEY_free(key);
+    }
+    if(hash) {
+        free(hash);
+    }
+    if(skey) {
+        free(skey);
+    }
+    if(ciphertext) {
+        free(ciphertext);
+    }
+    if(plaintext) {
+        free(plaintext);
+    }
+    if (sm4cip) {
+        free(sm4cip);
+    }
+    if (sm4plain) {
+        free(sm4plain);
+    }
+   
+    */
+
+    //--------------------------------certificate test---------------------------------
+//
+        unsigned char* shash = (unsigned char*)MALLOC(10);
+        memset(shash, 0x01, 10);
+//      unsigned char* skey = (unsigned char*)MALLOC(32);
+//      memset(skey, 0x02, 32);
+//      unsigned char* signature = (unsigned char*)MALLOC(32);
+//      memset(signature, 0x03, 32);
+//
+//
+//      Certificate_t *crt = NULL;
+//    crt = (Certificate_t*)CALLOC(1, sizeof(Certificate_t));
+//    if (!crt) {
+//        perror("crt calloc() failed");
+//        return 0;
+//    }
+//    crt->version = 2;
+//
+//    crt->signerInfo = (SignerInfo_t*)CALLOC(1, sizeof(SignerInfo_t));
+////  crt->signerInfo = new SignerInfo();
+//    crt->signerInfo->present = SignerInfo_PR_self;
+//    crt->signerInfo->choice.self = 0;
+////  crt->signerInfo->choice.certificateDigestWithSM3.buf = sn;
+////  crt->signerInfo->choice.certificateDigestWithSM3.size = 8;
+//
+//    crt->subjectInfo.subjectType =  SubjectType_authorizationTicket;
+////  crt->subjectInfo.subjectName.buf = (uint8_t* )malloc(8);
+////  memcpy(crt->subjectInfo.subjectName.buf, shash, 8);
+//    crt->subjectInfo.subjectName.buf = shash;
+//    crt->subjectInfo.subjectName.size = 8;
+//
+////  crt->subjectAttributes.verificationKey = new PublicKey();
+//    crt->subjectAttributes.verificationKey = (PublicKey_t*)CALLOC(1, sizeof(PublicKey_t));
+//    crt->subjectAttributes.verificationKey->present = PublicKey_PR_signKey;
+////  crt->subjectAttributes.verificationKey->choice.signKey.buf =  (uint8_t* )malloc(32);
+////  memcpy(crt->subjectAttributes.verificationKey->choice.signKey.buf, skey, 32);
+//    crt->subjectAttributes.verificationKey->choice.signKey.buf = get_sm2_private_key(key);
+//    crt->subjectAttributes.verificationKey->choice.signKey.size = 32;
+//
+//    crt->validityRestrictions.present = ValidityRestriction_PR_timeStartAndEnd;
+//    crt->validityRestrictions.choice.timeStartAndEnd.startValidity = 61828384;
+//    crt->validityRestrictions.choice.timeStartAndEnd.endValidity = 81828384;
+//
+//    crt->signature.present = Signature_PR_signature;
+////  crt->signature.choice.signature.buf = (uint8_t* )malloc(32);
+////  memcpy(crt->signature.choice.signature.buf, signature, 32);
+//    crt->signature.choice.signature.buf = sig;
+//    crt->signature.choice.signature.size = 32;
+//
+//    unsigned char* buff = NULL;
+//    size_t blen = 0;
+//
+//    if (0 != CertificateToBuffer(&buff, &blen, crt)) {
+//        perror("CertificateToBuffer fail\n");
+//        return 0;
+//    }
+//    cout<<"CertificateToBuffer succ"<<endl;
+//    printf("buff: %d\n", blen);
+//    for (int i = 0; i<blen; i++) {
+//        printf("0x%02x  ", *(buff + i));
+//    }
+//    printf("\n\n");
+//
+//    Certificate_t* mcrt = NULL;
+//    if ((mcrt = BufferToCertificate(buff, blen)) == NULL) {
+//        perror("BufferToCertificate fail\n");
+//        return 0;
+//    }
+//    cout<<"BufferToCertificate succ"<<endl;
+//    xer_fprint(stdout, &asn_DEF_Certificate, mcrt);
+//
+//
+//    Crl_t *crl = NULL;
+//    crl = (Crl_t*)CALLOC(1, sizeof(Crl_t));
+//    if (!crl) {
+//        perror("crl calloc() failed");
+//        return 0;
+//    }
+//    crl->version = 1;
+//
+//    crl->signerInfo.present = SignerInfo_PR_certificateDigestWithSM3;
+//    crl->signerInfo.choice.certificateDigestWithSM3.buf = shash;
+//    crl->signerInfo.choice.certificateDigestWithSM3.size = 8;
+//
+//    crl->unsignedCrl.caId.buf = shash;
+//    crl->unsignedCrl.caId.size = 8;
+//    crl->unsignedCrl.crlSerial = 0;
+//    crl->unsignedCrl.startPeriod = 61626364;
+//    crl->unsignedCrl.issueDate = 81828384;
+//    crl->unsignedCrl.nextCrl = 91929394;
+//
+//    crl->unsignedCrl.type.present = CrlType_PR_idOnly;
+//    crl->unsignedCrl.type.choice.idOnly.buf = shash;
+//    crl->unsignedCrl.type.choice.idOnly.size = 10;
+//
+//    crl->signature.present = Signature_PR_signature;
+//    crl->signature.choice.signature.buf = sig;
+//    crl->signature.choice.signature.size = 32;
+//
+//    unsigned char* buff2 = NULL;
+//    size_t blen2 = 0;
+//
+//    if (0 != CrlToBuffer(&buff2, &blen2, crl)) {
+//        perror("CrlToBuffer fail\n");
+//        return 0;
+//    }
+      /*
+      cout<<"CrlToBuffer succ"<<endl;
+      printf("buff: %d\n", blen2);
+      for (int i = 0; i<blen2; i++) {
+          printf("0x%02x  ", *(buff2 + i));
+      }
+      printf("\n\n");
+
+      Crl_t* mcrl = NULL;
+      if ((mcrl = BufferToCrl(buff2, blen2)) == NULL) {
+          perror("BufferToCrl fail\n");
+          return 0;
+      }
+      cout<<"BufferToCrl succ"<<endl;
+      xer_fprint(stdout, &asn_DEF_Crl, mcrl);
+*/
+//  cout<<get_diff_time()<<endl;
+//  cout<<get_time_now()<<endl;
+
+//  const char* fp1 = "../crts/certificate.txt";
+//  const char* fp2 = "../crls/crl.txt";
+//  CertificateToFile(fp1, crt);
+//  CrlToFile(fp2, crl);
+//
+//  const char* fp3 ="../crts/certificate.txt";
+//  const char* fp4 = "../crls/crl.txt";
+//  Certificate_t* mcrt =  FileToCertificate(fp3);
+//  Crl_t* mcrl = FileToCrl(fp4);
+//
+//  xer_fprint(stdout, &asn_DEF_Certificate, mcrt);
+//  xer_fprint(stdout, &asn_DEF_Crl, mcrl);
+
+
+    Certificate_t* crt = CreateRootCA();
+    EC_KEY* key = FileToKey("keys/rootCA");
+
+    unsigned char* pri = get_sm2_private_key(key);
+    unsigned char* pub = get_sm2_public_key(key);
+
+      printf("pri: \n");
+      for (int i = 0; i<32; i++) {
+          printf("0x%02x  ", *(pri + i));
+      }
+      printf("\n\n");
+
+      printf("pub: \n");
+      for (int i = 0; i<65; i++) {
+          printf("0x%02x  ", *(pub + i));
+      }
+      printf("\n\n");
+
+
+
+
+
+
+
+
+
+
+
+    cout<<endl;
+    /* Removes all digests and ciphers */
+    EVP_cleanup();
+    /* if you omit the next, a small leak may be left when you make use of the BIO (low level API) for e.g. base64 transformations */
+    CRYPTO_cleanup_all_ex_data();
+    /* Remove error strings */
+    ERR_free_strings();
+    return 0;
+
+}
+

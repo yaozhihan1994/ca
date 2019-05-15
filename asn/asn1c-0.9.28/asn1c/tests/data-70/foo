@@ -1,0 +1,26 @@
+<PDU>
+	<setOfREAL>
+		<REAL><!--<zzz>--><PLUS-INFINITY/></REAL>
+		<REAL> <!--<zzz>--><PLUS-INFINITY/></REAL>
+		<REAL> <!--<zzz>--> <PLUS-INFINITY/></REAL>
+		<REAL> <!--<zzz>--> <PLUS-INFINITY/> <!--/--> </REAL>
+		<REAL> <!--<zzz>--> <PLUS-INFINITY/> <!--/--></REAL>
+		<REAL> <!--<zzz>--> <PLUS-INFINITY/><!--/--></REAL>
+		<REAL>3.14</REAL>
+		<REAL> <!--/-->3.15</REAL>
+		<REAL> <!--/--> 3.16</REAL>
+		<REAL>
+			3.17
+		</REAL>
+		<REAL><!--/-->
+			3.18
+			<!--/-->
+		</REAL>
+		<REAL>
+			<!--/-->
+			3.19
+			<!--/-->
+		</REAL>
+	</setOfREAL>
+	</setOfREAL>
+</PDU>
