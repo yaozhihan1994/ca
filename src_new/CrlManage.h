@@ -14,7 +14,6 @@
 #ifndef CRL_MANAGE_H_
 #define CRL_MANAGE_H_
 
-#include "CrlManage.h"
 #include "Common.h"
 
 namespace CRL{
@@ -44,6 +43,7 @@ public:
 
 
     static void crl_manage();
+    static int init_crl_list();
 
 private:
     static list crl_list_;

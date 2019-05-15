@@ -89,7 +89,14 @@ public:
     static int BufferToFile(const char* filename, unsigned char* buff, size_t blen);
 
     static bool VerifyDeviceSerialNumber(unsigned char* serial_number, size_t slen);
-    
+
+    static void SplitString(const std::string& s, vector<std::string>& v, const std::string& c);
+
+    static template<class T> string ToString(const T& t);
+
+    static unsigned int UnsignedCharToInt(unsigned char* num);
+
+    static unsigned char* IntToUnsignedChar(unsigned int num);
 
 };
 }

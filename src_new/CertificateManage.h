@@ -13,6 +13,13 @@
 #ifndef CERTIFICATE_H_
 #define CERTIFICATE_H_
 
+#include <iostream>
+#include <list>
+#include <fstream>
+
+#include "asn/Certificate.h"
+#include "Common.h"
+
 namespace CERTIFICATE{
 
 #define ROOTCACRT "crts/rootCA.crt"

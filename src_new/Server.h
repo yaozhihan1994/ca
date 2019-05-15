@@ -26,6 +26,8 @@
 
 #include "Common.h"
 #include "Message.h"
+#include "CertificateManage.h"
+#include "CrlManage.h"
 
 namespace SERVER{
 
@@ -47,6 +49,13 @@ extern Certificate_t* g_pca_crt;
 extern Certificate_t* g_rca_crt;
 extern Certificate_t* g_cca_crt;
 
+extern unsigned char* g_rootca_buffer;
+extern unsigned char* g_subrootca_buffer;
+extern unsigned char* g_eca_buffer;
+extern unsigned char* g_pca_buffer;
+extern unsigned char* g_rca_buffer;
+extern unsigned char* g_cca_buffer;
+
 extern unsigned char* g_rootca_hash;
 extern unsigned char* g_subrootca_hash;
 extern unsigned char* g_eca_hash;
@@ -60,21 +69,21 @@ public:
     Server();
     ~Server();
 
+    static int Init();
+    static int CreateCA();
     static int CreateSocket(const char* ip, uint16_t port);
     static int Handler();
 
-    static int deal_with_C0(unsigned char* data, size_t dlen);
-    static int deal_with_C1(unsigned char* data, size_t dlen);
-    static int deal_with_C2(unsigned char* data, size_t dlen);
-    static int deal_with_C3(unsigned char* data, size_t dlen);
-    static int deal_with_C4(unsigned char* data, size_t dlen);
-    static int deal_with_C5(unsigned char* data, size_t dlen);
+    static int deal_with_C0(unsigned char data[], size_t dlen, int sock);
+    static int deal_with_C1(unsigned char data[], size_t dlen, int sock);
+    static int deal_with_C2(unsigned char data[], size_t dlen, int sock);
+    static int deal_with_C3(unsigned char data[], size_t dlen, int sock);
+    static int deal_with_C4(unsigned char data[], size_t dlen, int sock);
+    static int deal_with_C5(unsigned char data[], size_t dlen, int sock);
 
-    static int SendErrorCode();
 
 private:
 
-    int conn_fd_;
     int sock_fd_;
     struct sockaddr_in addr_;
 

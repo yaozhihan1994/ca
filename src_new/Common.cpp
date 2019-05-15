@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
+#include <vector>
 
 #include <openssl/conf.h>
 #include <openssl/evp.h>
@@ -672,9 +673,48 @@ bool Common::VerifyDeviceSerialNumber(unsigned char* serial_number, size_t slen)
     return COMMON_ERROR;
 }
 
+void Common::SplitString(const std::string& s, vector<std::string>& v, const std::string& c){
+    std::string::size_type pos1, pos2;
+    pos2 = s.find(c);
+    pos1 = 0;
+    while(std::string::npos != pos2)
+    {
+        v.push_back(s.substr(pos1, pos2-pos1));
+         
+        pos1 = pos2 + c.size();
+        pos2 = s.find(c, pos1);
+    }
+    if(pos1 != s.length())
+        v.push_back(s.substr(pos1));
+}
+
+template<class T> string Common::ToString(const T& t){
+    ostringstream oss;  
+    oss<<t;            
+    return oss.str();   
+}
 
 
+unsigned int Common::UnsignedCharToInt(unsigned char* num){
+    int ret = num[3];
+    ret += num[2] << 8;
+    ret += num[1] << 16;
+    ret += num[0] << 24;
+    return ret;
+}
 
+unsigned char* Common::IntToUnsignedChar(unsigned int num){
+    unsigned char *ret = (unsigned char* )malloc(4);
+    if (!ret) {
+        printf("IntToUnsignedChar malloc fail\n");
+        return NULL;
+    }
+    ret[0] = num >> 24;
+    ret[1] = num >> 16;
+    ret[2] = num >> 8;
+    ret[3] = num;
+    return ret;
+}
 
 /**
 * @}

@@ -10,13 +10,8 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#include <iostream>
-#include <list>
-#include <fstream>
 
-#include "asn/Certificate.h"
-#include "Certificate.h"
-#include "Common.h"
+#include "CertificateManage.h"
  
 using namespace CERTIFICATE;
 

@@ -14,6 +14,8 @@
 #ifndef MESSAGE_H_
 #define MESSAGE_H_
 
+#include "Common.h"
+
 namespace MESSAGE{
 
 #define FAIL_CODE 0x01
@@ -21,17 +23,20 @@ namespace MESSAGE{
 
 class Message{
 public:
+    Message();
+    ~Message();
+
     static int MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, unsigned char** msg, size_t* mlen);
     static int MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cmd, unsigned char** data, size_t* dlen);
 
-    static int SendMsg(void* msg, size_t mlen);
-    static int RecvMsg(unsigned char** msg, size_t* mlen);
+    static int SendMsg(int sock, void* msg, size_t mlen);
 
     static unsigned char CalculateBCC(unsigned char* buff, int len);
 
     static int SendErrorCode(unsigned char cmd);
-
-
+private:
+    static unsigned char message_send_succ_code;
+    static unsigned char message_send_fail_code;
 };
 }
 
