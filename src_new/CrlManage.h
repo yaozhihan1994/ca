@@ -36,19 +36,23 @@ public:
     static Crl_t* BufferToCrl(unsigned char* buffer, size_t blen);
     static int ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs);
 
-    static int CreateCRL(EC_KEY* key, unsigned char* subrootca_hash, unsigned char* cca_hash, unsigned char* hashid10, unsigned long crt_start_time);
+    static Crl_t* CreateCRL(EC_KEY* key, unsigned char* subrootca_hashid8, unsigned char* cca_hashid8, 
+                         unsigned char* hashid10, unsigned long crt_start_difftime);
 
     static int CrlSign(EC_KEY* key, Crl_t* crt);
     static int CrlVerify(EC_KEY* key, Crl_t* crt);
 
-
     static void crl_manage();
     static int init_crl_list();
 
-private:
-    static list crl_list_;
-    static pthread_mutex_t crl_mutex_;
+    static int set_crl_list(string name);
+    static int send_crls(int sock, unsigned char cmd);
 
+
+private:
+    static list<string> crl_list_;
+    static std::mutex crl_mutex_;
+    static unsigned long crl_serial_number_;
 };
 }
 

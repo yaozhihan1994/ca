@@ -201,7 +201,6 @@
             Filters="*.c;*.C;*.cc;*.cpp;*.cp;*.cxx;*.c++;*.prg;*.pas;*.dpr;*.asm;*.s;*.bas;*.java;*.cs;*.sc;*.e;*.cob;*.html;*.rc;*.tcl;*.py;*.pl;*.d;*.m;*.mm;*.go">
             <F N="back.txt"/>
             <F N="build.sh"/>
-            <F N="../include/Certificate.c"/>
             <F N="CertificateAndCrl.cpp"/>
             <F N="CertificateAndCrl.h"/>
             <F N="Common.cpp"/>
@@ -212,7 +211,6 @@
             <F N="Main.cpp"/>
             <F N="Message.cpp"/>
             <F N="Message.h"/>
-            <F N="../include/Signature.c"/>
         </Folder>
         <Folder
             Name="Header Files"

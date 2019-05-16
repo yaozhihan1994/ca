@@ -15,11 +15,9 @@
 #include "Message.h"
 
 using namespace MESSAGE;
-using namespace COMMON;
-using namespace std;
 
-unsigned char message_send_succ_code = SUCC_CODE;
-unsigned char message_send_fail_code = FAIL_CODE;
+unsigned char Message::message_send_succ_code = SUCC_CODE;
+unsigned char Message::message_send_fail_code = FAIL_CODE;
 
 Message::Message(){
 }

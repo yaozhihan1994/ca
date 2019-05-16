@@ -34,6 +34,41 @@
 
 using namespace COMMON;
 
+EC_KEY* g_rootca_key = NULL;
+EC_KEY* g_subrootca_key = NULL;
+EC_KEY* g_eca_key = NULL;
+EC_KEY* g_pca_key = NULL;
+EC_KEY* g_rca_key = NULL;
+EC_KEY* g_cca_key = NULL;
+
+Certificate_t* g_rootca_crt = NULL;
+Certificate_t* g_subrootca_crt = NULL;
+Certificate_t* g_eca_crt = NULL;
+Certificate_t* g_pca_crt = NULL;
+Certificate_t* g_rca_crt = NULL;
+Certificate_t* g_cca_crt = NULL;
+
+unsigned char* g_rootca_buffer = NULL;
+unsigned char* g_subrootca_buffer = NULL;
+unsigned char* g_eca_buffer = NULL;
+unsigned char* g_pca_buffer = NULL;
+unsigned char* g_rca_buffer = NULL;
+unsigned char* g_cca_buffer = NULL;
+
+unsigned int g_rootca_buffer_size = 0;
+unsigned int g_subrootca_buffer_size = 0;
+unsigned int g_eca_buffer_size = 0;
+unsigned int g_pca_buffer_size = 0;
+unsigned int g_rca_buffer_size = 0;
+unsigned int g_cca_buffer_size = 0;
+
+unsigned char* g_rootca_hashid8 = NULL;
+unsigned char* g_subrootca_hashid8 = NULL;
+unsigned char* g_eca_hashid8 = NULL;
+unsigned char* g_pca_hashid8 = NULL;
+unsigned char* g_rca_hashid8 = NULL;
+unsigned char* g_cca_hashid8 = NULL;
+
 Common::Common(){
 }
 
@@ -487,6 +522,7 @@ int Common::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* k
     return ret;
 }
 
+//pub key need free
 unsigned char* Common::get_sm2_public_key(const EC_KEY* key){
     if (!key) {
         return NULL;
@@ -656,6 +692,128 @@ int Common::BufferToFile(const char* filename, unsigned char* buff, size_t blen)
     return COMMON_SUCCESS;
 }
 
+//pri+pub
+int Common::KeyToFile(const char* filename, EC_KEY* key){
+
+    int ret = COMMON_ERROR;
+    unsigned char* pub = NULL;
+    unsigned char* pri = NULL;
+    unsigned char* buff_key = NULL;
+    size_t buff_key_length = 32+65;
+    pub = Common::get_sm2_public_key(key);
+    if (!pub) {
+        printf("KeyToFile get_sm2_public_key fail\n");
+        goto err;
+    }
+
+    pri = Common::get_sm2_private_key(key);
+    if (!pri) {
+        printf("KeyToFile get_sm2_private_key fail\n");
+        goto err;
+    }
+
+    buff_key = (unsigned char*)calloc(buff_key_length, sizeof(unsigned char));
+    if (!buff_key) {
+        printf("KeyToFile calloc buff_key fail\n");
+        goto err;
+    }
+    memcpy(buff_key, pri, PRIVATE_KEY_LENGTH);
+    memcpy(buff_key +PRIVATE_KEY_LENGTH, pub, 65);
+
+    if (Common::BufferToFile(filename, buff_key, buff_key_length) != COMMON_SUCCESS) {
+        printf("KeyToFile BufferToFile fail\n");
+        goto err;
+    }
+
+    ret = COMMON_SUCCESS;
+    err:{
+        if (pub) {
+            free(pub);
+        }
+        if (pri) {
+            free(pri);
+        }
+        if (buff_key) {
+            free(buff_key);
+        }
+    }
+    return ret;
+}
+
+EC_KEY* Common::FileToKey(const char* filename){
+    if (!filename) {
+        return NULL;
+    }
+
+    unsigned char* buffer = NULL;
+    size_t blen = 0;
+    EC_GROUP *eg = NULL;
+    BIGNUM* mpri = NULL;
+    BIGNUM* x = NULL;
+    BIGNUM* y = NULL;
+    EC_POINT* mpub = NULL;
+    EC_KEY* key = NULL;
+
+    if(Common::FileToBuffer(filename, &buffer, &blen) != COMMON_SUCCESS){
+        printf("FileToKey FileToBuffer fail\n");
+        if (buffer) {
+            free(buffer);
+        }
+        return NULL;
+    }
+
+    unsigned char pri[32];
+    memcpy(pri, buffer, 32);
+    unsigned char pub[65] = {0x04};
+    memcpy(pub, buffer + 32, 65);
+
+    free(buffer);
+
+    key = Common::CreateSm2KeyPair();
+    if (!key) {
+        printf("FileToKey: CreateSm2KeyPair fail\n");
+        return NULL;
+    }
+
+    eg = EC_KEY_get0_group(key);
+    if (!eg) {
+        printf("FileToKey: EC_KEY_get0_group fail\n");
+        return NULL;
+    }
+    mpub = EC_KEY_get0_public_key(key);
+    if (!mpub) {
+        printf("FileToKey: EC_KEY_get0_public_key fail\n");
+        return NULL;
+    }
+    mpri = BN_bin2bn(pri, 32, NULL);
+    if (!mpri) {
+        printf("FileToKey: BN_bin2bn mpri fail\n");
+        return NULL;
+    }
+    x = BN_bin2bn(pub+1, 32, NULL);
+    if (!x) {
+        printf("FileToKey: BN_bin2bn x fail\n");
+        return NULL;
+    }
+    y = BN_bin2bn(pub+1+32, 32, NULL);
+    if (!y) {
+        printf("FileToKey: BN_bin2bn y fail\n");
+        return NULL;
+    }
+
+    if(1 != EC_KEY_set_private_key(key, mpri)){
+        printf("FileToKey: EC_KEY_set_private_key fail\n");
+        return NULL;
+    }
+
+    if(1 != EC_POINT_set_affine_coordinates_GFp(eg, mpub, x, y, NULL)){
+        printf("FileToKey: EC_POINT_set_affine_coordinates_GFp fail\n");
+        return NULL;
+    }
+
+    return key;
+}
+
 bool Common::VerifyDeviceSerialNumber(unsigned char* serial_number, size_t slen){
     fstream fs(DEVICE_SERIAL_NUMBER);
     if (!fs) {
@@ -715,6 +873,24 @@ unsigned char* Common::IntToUnsignedChar(unsigned int num){
     ret[3] = num;
     return ret;
 }
+
+int Common::VerifyDeviceId(unsigned char* id, size_t len){
+    fstream fs(DEVICE_SERIAL_NUMBER);
+    if (!fs) {
+        printf("VerifyDeviceId: open file: %s Failed!\n", DEVICE_SERIAL_NUMBER);
+        return COMMON_ERROR;
+    }
+    unsigned char sn[81];
+    while (fs.peek() != EOF) {
+        fs.getline(sn, 81);
+        if(memcmp(id, sn, len) == 0){
+            return COMMON_SUCCESS;
+        }
+    }
+    fs.close();
+    return COMMON_ERROR;
+}
+
 
 /**
 * @}

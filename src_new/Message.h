@@ -26,6 +26,7 @@ public:
     Message();
     ~Message();
 
+    //need free
     static int MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, unsigned char** msg, size_t* mlen);
     static int MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cmd, unsigned char** data, size_t* dlen);
 

@@ -214,7 +214,7 @@ void* RcaManageThread(void *arg ){
             kname+=fname;
             unsigned char* buf = NULL;
             size_t blen = 0;
-            if(FileToBuffer(kname.c_str(), &buf, &blen) != COMMON_SUCCESS){
+            if(FileToBuffeCr(kname.c_str(), &buf, &blen) != COMMON_SUCCESS){
                 printf("RcaManageThread FileToBuffer init fail\n");
                 return;
             }
