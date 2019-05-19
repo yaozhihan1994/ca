@@ -204,6 +204,10 @@ Crl_t* CrlManage::CreateCRL(bool is_first, unsigned char* hashid10, unsigned lon
         goto err;
     }
 
+    if (set_crl_serial_number(crl_serial_number_) != COMMON_SUCCESS){
+        printf("CreateCRL: set_crl_serial_number fail\n");
+        goto err;
+    }
     //xer_fprint(stdout, &asn_DEF_Crl, crl);
     ret = COMMON_SUCCESS;
     err:{
@@ -308,7 +312,7 @@ int CrlManage::init_crl_list(){
             std::string name(p->d_name);
             crl_list_.push_back(name);
             unsigned long sn = strtoul(name.substr(name.find("_") + 1).c_str(), NULL, 10);
-            crl_serial_number_ = sn > crl_serial_number_? sn : crl_serial_number_;
+            crl_serial_number_ = get_crl_serial_number();
             crl_size++;
         }
     }
@@ -390,7 +394,34 @@ int CrlManage::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
     return COMMON_SUCCESS;
 }
 
+unsigned long CrlManage::get_crl_serial_number(){
+    unsigned long sn = 0;
+    std::fstream fs;
+    fs.open(CRL_SERIAL_NUMBER, std::ios::in);
+    if (!fs) {
+        printf("set_crl_serial_number: open file: %s Failed!\n", CRL_SERIAL_NUMBER);
+        return sn;
+    }
+    std::string s;
+    fs>>s;
+    std::stringstream ss;
+    ss<<s;
+    ss>>sn;
+    fs.close();
+    return sn;
+}
 
+int CrlManage::set_crl_serial_number(unsigned long sn){
+    std::fstream fs;
+    fs.open(CRL_SERIAL_NUMBER, std::ios::out);
+    if (!fs) {
+        printf("set_crl_serial_number: open file: %s Failed!\n", CRL_SERIAL_NUMBER);
+        return COMMON_ERROR;
+    }
+    fs<<sn;
+    fs.close();
+    return COMMON_SUCCESS;
+}
 
 /**
 * @}

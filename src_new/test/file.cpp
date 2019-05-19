@@ -14,24 +14,42 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <fstream>
+#include <sstream>
 using namespace std;
+#define CRL_SERIAL_NUMBER "../serial_number/crl_serial_number"
 
-
+unsigned long get_crl_serial_number(){
+    unsigned long sn = 0;
+    std::fstream fs;
+    fs.open(CRL_SERIAL_NUMBER, ios::in);
+    if (!fs) {
+        printf("set_crl_serial_number: open file: %s Failed!\n", CRL_SERIAL_NUMBER);
+        return 0;
+    }
+    std::string s;
+    fs>>s;
+    std::stringstream ss;
+    ss<<s;
+    ss>>sn;
+    fs.close();
+    return sn;
+}
 
 int set_crl_serial_number(unsigned long sn){
-    fstream fs;
-    fs.open("/home/yzh/CA/ca/src_new/crls/crl_serial_number", ios::out);
+    std::fstream fs;
+    fs.open(CRL_SERIAL_NUMBER, ios::out);
     if (!fs) {
-        printf("set_crl_serial_number: open file Failed!\n");
+        printf("set_crl_serial_number: open file: %s Failed!\n", CRL_SERIAL_NUMBER);
         return -1;
     }
     fs<<sn;
     fs.close();
 }
 
+
 int main(){
 set_crl_serial_number(1000);
-
+cout<<get_crl_serial_number()<<endl;
 return 0;
 }
 

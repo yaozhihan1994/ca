@@ -25,7 +25,7 @@
 #include "Common.h"
 
 #define CRL_FILENAME "crls/"
-#define CRL_SERIAL_NUMBER "crl_serial_number"
+#define CRL_SERIAL_NUMBER "serial_number/crl_serial_number"
 #define CRL_VERSION 1
 
 
@@ -52,11 +52,11 @@ public:
     static void set_crl_list(std::string name);
     static int get_crls(unsigned char** buffer, size_t* beln, size_t* crl_num);
 
-
 private:
     static void crl_manage();
     static std::thread crl_manage_thread_;
-
+    static unsigned long get_crl_serial_number();
+    static int set_crl_serial_number(unsigned long sn); 
     static int init_crl_list();
 
     static std::list<std::string> crl_list_;
