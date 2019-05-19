@@ -14,10 +14,8 @@
 #include "Common.h"
 #include "Message.h"
 
-using namespace MESSAGE;
-
-unsigned char Message::message_send_succ_code = SUCC_CODE;
-unsigned char Message::message_send_fail_code = FAIL_CODE;
+unsigned char Message::message_send_succ_code_ = SUCC_CODE;
+unsigned char Message::message_send_fail_code_ = FAIL_CODE;
 
 Message::Message(){
 }
@@ -25,7 +23,7 @@ Message::Message(){
 Message::~Message(){
 }
 
-int Mesage::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, unsigned char** msg, size_t* mlen){
+int Message::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, unsigned char** msg, size_t* mlen){
 
     unsigned char* msg_ = (unsigned char* )malloc(dlen + 10);
     if (!msg_) {
@@ -45,23 +43,22 @@ int Mesage::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, u
     len+=4;
     memset(msg_+len, cmd, 1);
     len+=1;
-    memset(msg_+len, Message::message_send_succ_code, 1);
+    memset(msg_+len, Message::message_send_succ_code_, 1);
     len+=1;
     memcpy(msg_+len, data, dlen);
     len+=dlen;
     unsigned char bcc = Message::CalculateBCC(msg_+2, len-2);
-    memcpy(msg_+len, bcc, 1);
+    memset(msg_+len, bcc, 1);
     len+=1;
     memset(msg_+len, 0xff, 1);
     len+=1;
-
     *msg = msg_;
     *mlen = len;
     free(length_);
     return COMMON_SUCCESS;
 }
 
-int Mesage::MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cmd, unsigned char** data, size_t* dlen){
+int Message::MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cmd, unsigned char** data, size_t* dlen){
     unsigned char head[2] = {0xff,0xff};
     if (memcmp(buffer, head, 2) != 0) {
         printf("MessageDecode verify msg head fail\n");
@@ -94,6 +91,11 @@ int Message::SendMsg(int sock, void* msg, size_t mlen){
         printf("SendMsg fail\n");
         return COMMON_ERROR;
     }
+    printf("send : %d\n", mlen);
+	for(int i = 0; i<mlen; i++){
+		printf("0x%02x ",*((unsigned char*)msg+i));
+	}
+	printf("\n");
     return COMMON_SUCCESS;
 }
 
@@ -106,15 +108,34 @@ unsigned char Message::CalculateBCC(unsigned char* buff, int len){
 }
 
 
-int Mesage::SendErrorCode(int sock, unsigned char cmd){
+int Message::SendErrorCode(int sock, unsigned char cmd){
     int ret = COMMON_ERROR;
     unsigned char data = FAIL_CODE;
     unsigned char* msg = NULL;
-    size_t meln = 0;
-    if(Message::MessageEncode(cmd, (unsigned char* )&data, 1, &msg, &mlen) != COMMON_SUCCESS){
-        printf("SendErrorCode: MessageEncode fail\n");
+    size_t mlen = 0;
+    unsigned char* length = NULL;
+    msg = (unsigned char* )malloc(10);
+    if (!msg) {
+        printf("SendErrorCode: malloc msg fail\n");
         goto err; 
     }
+    memset(msg+mlen, 0xff, 2);
+    mlen+=2;
+    length = Common::IntToUnsignedChar(2);
+    if (!length) {
+        printf("SendErrorCode: IntToUnsignedChar fail\n");
+        return COMMON_ERROR;
+    }
+    memcpy(msg+mlen, length, 4);
+    mlen+=4;
+    memset(msg+mlen, cmd, 1);
+    mlen+=1;
+    memset(msg+mlen, FAIL_CODE, 1);
+    mlen+=1;
+    memset(msg+mlen, Message::CalculateBCC(msg+2, 6), 1);
+    mlen+=1;
+    memset(msg+mlen, 0xff, 1);
+    mlen+=1;
     if(Message::SendMsg(sock, (void* )msg, mlen) != COMMON_SUCCESS){
         printf("SendErrorCode: SendMsg fail\n");
         goto err; 
@@ -123,6 +144,30 @@ int Mesage::SendErrorCode(int sock, unsigned char cmd){
     ret = COMMON_SUCCESS;
     err:{
         if(msg){
+            free(msg);
+        }
+        if(length){
+            free(length);
+        }
+    }
+    return ret;
+}
+
+int Message::send_crl_package(int num, int sock, unsigned char cmd, unsigned char* buffer, size_t blen){
+    int ret = COMMON_ERROR;
+    unsigned char* msg = NULL;
+    size_t mlen = 0;
+    if (Message::MessageEncode(cmd, buffer, blen, &msg, &mlen) != COMMON_SUCCESS) {
+        printf("deal_with_C3: MessageEncode pcrt fail\n");
+        goto err;
+    }
+    if (Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS) {
+        printf("deal_with_C3: SendMsg pcrt fail\n");
+        goto err;
+    }
+    ret = COMMON_SUCCESS;
+    err:{
+        if (msg) {
             free(msg);
         }
     }

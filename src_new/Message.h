@@ -16,8 +16,6 @@
 
 #include "Common.h"
 
-namespace MESSAGE{
-
 #define FAIL_CODE 0x01
 #define SUCC_CODE 0x00
 
@@ -34,12 +32,14 @@ public:
 
     static unsigned char CalculateBCC(unsigned char* buff, int len);
 
-    static int SendErrorCode(unsigned char cmd);
+    static int SendErrorCode(int sock, unsigned char cmd);
+
+    static int send_crl_package(int num, int sock, unsigned char cmd, unsigned char* buffer, size_t blen);
 private:
-    static unsigned char message_send_succ_code;
-    static unsigned char message_send_fail_code;
+    static unsigned char message_send_succ_code_;
+    static unsigned char message_send_fail_code_;
 };
-}
+
 
 #endif
 

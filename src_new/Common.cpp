@@ -11,63 +11,14 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cstring>
-#include <string.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctime>
-#include <vector>
-
-#include <openssl/conf.h>
-#include <openssl/evp.h>
-#include <openssl/sm2.h>
-#include <openssl/obj_mac.h>
-#include <openssl/ec.h>
-#include <openssl/ecdsa.h>
-#include <openssl/err.h>
-
 #include "Common.h"
 
-using namespace COMMON;
-
-EC_KEY* g_rootca_key = NULL;
-EC_KEY* g_subrootca_key = NULL;
-EC_KEY* g_eca_key = NULL;
-EC_KEY* g_pca_key = NULL;
-EC_KEY* g_rca_key = NULL;
-EC_KEY* g_cca_key = NULL;
-
-Certificate_t* g_rootca_crt = NULL;
-Certificate_t* g_subrootca_crt = NULL;
-Certificate_t* g_eca_crt = NULL;
-Certificate_t* g_pca_crt = NULL;
-Certificate_t* g_rca_crt = NULL;
-Certificate_t* g_cca_crt = NULL;
-
-unsigned char* g_rootca_buffer = NULL;
-unsigned char* g_subrootca_buffer = NULL;
-unsigned char* g_eca_buffer = NULL;
-unsigned char* g_pca_buffer = NULL;
-unsigned char* g_rca_buffer = NULL;
-unsigned char* g_cca_buffer = NULL;
-
-unsigned int g_rootca_buffer_size = 0;
-unsigned int g_subrootca_buffer_size = 0;
-unsigned int g_eca_buffer_size = 0;
-unsigned int g_pca_buffer_size = 0;
-unsigned int g_rca_buffer_size = 0;
-unsigned int g_cca_buffer_size = 0;
-
-unsigned char* g_rootca_hashid8 = NULL;
-unsigned char* g_subrootca_hashid8 = NULL;
-unsigned char* g_eca_hashid8 = NULL;
-unsigned char* g_pca_hashid8 = NULL;
-unsigned char* g_rca_hashid8 = NULL;
-unsigned char* g_cca_hashid8 = NULL;
+s_CaInfo g_rootca;
+s_CaInfo g_subrootca;
+s_CaInfo g_eca;
+s_CaInfo g_pca;
+s_CaInfo g_rca;
+s_CaInfo g_cca;
 
 Common::Common(){
 }
@@ -121,7 +72,7 @@ int Common::SignData(EC_KEY* key, const char* id, const unsigned char* msg, size
         goto err;
     }
 
-    *sig_len = len;
+    *sig_len = slen;
     ret = COMMON_SUCCESS;
     err:{
         if (signature) {
@@ -136,10 +87,8 @@ int Common::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_l
     if (!key || !sig || !id || !msg) {
         return COMMON_NULL_POINT;
     }
-
     int ret = COMMON_ERROR;
     ECDSA_SIG *ecdsa_sig = NULL;
-
     ecdsa_sig = d2i_ECDSA_SIG(NULL, &sig, sig_len);
     if (!ecdsa_sig) {
         printf("VerifySignedData: d2i_ECDSA_SIG fail\n");
@@ -563,7 +512,7 @@ unsigned char* Common::get_sm2_public_key(const EC_KEY* key){
         goto err;
     }
 
-    pub = (unsigned char* )calloc(SM2_PUBLIC_KEY_LENGTH, sizeof(unsigned char));
+    pub = (unsigned char* )calloc(65, sizeof(unsigned char));
     if (!pub) {
         printf("get_sm2_public_key calloc pub_key failed\n");
         goto err;
@@ -602,7 +551,7 @@ unsigned char* Common::get_sm2_private_key(const EC_KEY* key){
     }
 
     unsigned char *pri = NULL;
-    pri = (unsigned char* )calloc(SM2_PRIVATE_KEY_LENGTH, sizeof(unsigned char));
+    pri = (unsigned char* )calloc(PRIVATE_KEY_LENGTH, sizeof(unsigned char));
     if (!pri) {
         printf("get_sm2_private_key malloc pri_key failed\n");
         goto err;
@@ -815,7 +764,7 @@ EC_KEY* Common::FileToKey(const char* filename){
 }
 
 bool Common::VerifyDeviceSerialNumber(unsigned char* serial_number, size_t slen){
-    fstream fs(DEVICE_SERIAL_NUMBER);
+    std::fstream fs(DEVICE_SERIAL_NUMBER);
     if (!fs) {
         printf("VerifyDeviceSerialNumber: open file: %s Failed!\n", DEVICE_SERIAL_NUMBER);
         return COMMON_ERROR;
@@ -831,23 +780,8 @@ bool Common::VerifyDeviceSerialNumber(unsigned char* serial_number, size_t slen)
     return COMMON_ERROR;
 }
 
-void Common::SplitString(const std::string& s, vector<std::string>& v, const std::string& c){
-    std::string::size_type pos1, pos2;
-    pos2 = s.find(c);
-    pos1 = 0;
-    while(std::string::npos != pos2)
-    {
-        v.push_back(s.substr(pos1, pos2-pos1));
-         
-        pos1 = pos2 + c.size();
-        pos2 = s.find(c, pos1);
-    }
-    if(pos1 != s.length())
-        v.push_back(s.substr(pos1));
-}
-
-template<class T> string Common::ToString(const T& t){
-    ostringstream oss;  
+std::string Common::UnsignedLongToString(unsigned long t){
+    std::ostringstream oss;  
     oss<<t;            
     return oss.str();   
 }
@@ -872,23 +806,6 @@ unsigned char* Common::IntToUnsignedChar(unsigned int num){
     ret[2] = num >> 8;
     ret[3] = num;
     return ret;
-}
-
-int Common::VerifyDeviceId(unsigned char* id, size_t len){
-    fstream fs(DEVICE_SERIAL_NUMBER);
-    if (!fs) {
-        printf("VerifyDeviceId: open file: %s Failed!\n", DEVICE_SERIAL_NUMBER);
-        return COMMON_ERROR;
-    }
-    unsigned char sn[81];
-    while (fs.peek() != EOF) {
-        fs.getline(sn, 81);
-        if(memcmp(id, sn, len) == 0){
-            return COMMON_SUCCESS;
-        }
-    }
-    fs.close();
-    return COMMON_ERROR;
 }
 
 

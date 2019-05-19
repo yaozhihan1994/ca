@@ -13,7 +13,22 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
-namespace SERVER{
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<errno.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<unistd.h>
+#include<thread>
+#include<mutex>
+#include<condition_variable>
+
+#include "Message.h"
+#include "CertificateManage.h"
+#include "CrlManage.h"
+#include "Common.h"
 
 #define SERVER_PORT 6666
 #define SERVER_LISTEN_NUMBER 10
@@ -26,8 +41,8 @@ public:
     ~Server();
 
     static int Init();
-    static int CreateSocket(const char* ip, uint16_t port);
-    static int Start();
+
+    static void Start();
 
     static void deal_with_C0(unsigned char data[], size_t dlen, int sock);
     static void deal_with_C1(unsigned char data[], size_t dlen, int sock);
@@ -36,18 +51,26 @@ public:
     static void deal_with_C4(unsigned char data[], size_t dlen, int sock);
     static void deal_with_C5(unsigned char data[], size_t dlen, int sock);
 
+    static void Wait();
+    static void Notify();
 
 private:
-    static int init_ca(string key_filename, EC_KEY** key, string crt_filename, Certificate_t** crt, 
-                    unsigned char** crt_buffer, unsigned long** crt_buffer_len, unsigned char** crt_hashid8);
+    static int init_ca(std::string key_filename, std::string crt_filename, s_CaInfo* ca);
+    static int create_socket();
     static int check_ca();
     static int create_ca();
-    static int create_ca_();
-    int sock_fd_;
-    struct sockaddr_in addr_;
+    static int create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_hashid8, EC_KEY* sign_key,
+                              std::string key_filename, std::string crt_filename, s_CaInfo* ca);
+
+    static int sock_fd_;
+    static struct sockaddr_in addr_;
+
+    static int server_count_;
+    static std::mutex server_mutex_;
+    static std::condition_variable server_condition_;
 
 };
-}
+
 #endif
 /**
 * @}

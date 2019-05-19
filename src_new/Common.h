@@ -13,7 +13,26 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-namespace COMMON{
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cstring>
+#include <string.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctime>
+#include <unistd.h>
+
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/sm2.h>
+#include <openssl/obj_mac.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/err.h>
+
+#include "asn/Certificate.h"
 
 #define DIFFTIME_2004 1075564800
 #define CA_CRT_VALIDITY_PERIOD_YEARS 10 
@@ -25,6 +44,7 @@ namespace COMMON{
 #define CERTIFICATE_DGST_WITH_SM3_LENGTH 8
 #define UNSIGNED_CRL_HASHID_LENGTH 10
 
+#define DEVICE_SERIAL_NUMBER "serial_number/device_serial_number"
 #define ROOTCACRT "crts/rootCA.crt"
 #define ROOTCAKEY "crts/rootCA.key"
 #define SUBROOTCACRT "crts/SubrootCA.crt"
@@ -60,40 +80,21 @@ typedef enum CertificateType
 
 } e_CertificateType;
 
-extern EC_KEY* g_rootca_key;
-extern EC_KEY* g_subrootca_key;
-extern EC_KEY* g_eca_key;
-extern EC_KEY* g_pca_key;
-extern EC_KEY* g_rca_key;
-extern EC_KEY* g_cca_key;
+typedef struct CaInfo{
+    EC_KEY* key;
+    Certificate_t* crt;
+    unsigned char* buffer;
+    unsigned int blen;
+    unsigned char* hashid8;
 
-extern Certificate_t* g_rootca_crt;
-extern Certificate_t* g_subrootca_crt;
-extern Certificate_t* g_eca_crt;
-extern Certificate_t* g_pca_crt;
-extern Certificate_t* g_rca_crt;
-extern Certificate_t* g_cca_crt;
+} s_CaInfo;
 
-extern unsigned char* g_rootca_buffer;
-extern unsigned char* g_subrootca_buffer;
-extern unsigned char* g_eca_buffer;
-extern unsigned char* g_pca_buffer;
-extern unsigned char* g_rca_buffer;
-extern unsigned char* g_cca_buffer;
-
-extern unsigned int g_rootca_buffer_size;
-extern unsigned int g_subrootca_buffer_size;
-extern unsigned int g_eca_buffer_size;
-extern unsigned int g_pca_buffer_size;
-extern unsigned int g_rca_buffer_size;
-extern unsigned int g_cca_buffer_size;
-
-extern unsigned char* g_rootca_hashid8;
-extern unsigned char* g_subrootca_hashid8;
-extern unsigned char* g_eca_hashid8;
-extern unsigned char* g_pca_hashid8;
-extern unsigned char* g_rca_hashid8;
-extern unsigned char* g_cca_hashid8;
+extern s_CaInfo g_rootca;
+extern s_CaInfo g_subrootca;
+extern s_CaInfo g_eca;
+extern s_CaInfo g_pca;
+extern s_CaInfo g_rca;
+extern s_CaInfo g_cca;
 
 class Common{
 public:
@@ -144,21 +145,18 @@ public:
 
     static int KeyToFile(const char* filename, EC_KEY* key);
 
-    static EC_KEY* Common::FileToKey(const char* filename);
+    static EC_KEY* FileToKey(const char* filename);
 
     static bool VerifyDeviceSerialNumber(unsigned char* serial_number, size_t slen);
 
-    static void SplitString(const std::string& s, vector<std::string>& v, const std::string& c);
-
-    template<class T> static string ToString(const T& t);
+    static std::string UnsignedLongToString(unsigned long t);
 
     static unsigned int UnsignedCharToInt(unsigned char* num);
 
     static unsigned char* IntToUnsignedChar(unsigned int num);
 
-    static int VerifyDeviceId(unsigned char* id, size_t len);
 };
-}
+
 #endif
 
 /**

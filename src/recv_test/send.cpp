@@ -21,7 +21,7 @@ int sock_r, sock_s;
 struct sockaddr_in addr_r, addr_s;
 int CreateSocket(const char* ip, uint16_t port){
     
-    if ((sock_r = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+    if ((sock_r = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         printf("CreateSocket: socket() Failed!\n");
         return -1;
     }

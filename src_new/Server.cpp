@@ -9,24 +9,21 @@
 //--------------------------------------------------
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<errno.h>
-#include<sys/types.h>
-#include<sys/socket.h>
-#include<netinet/in.h>
-#include<unistd.h>
-#include<thread>
-#include<mutex>
 
-#include "Common.h"
-#include "Message.h"
-#include "CertificateManage.h"
-#include "CrlManage.h"
 #include "Server.h"
 
-using namespace SERVER;
+extern s_CaInfo g_rootca;
+extern s_CaInfo g_subrootca;
+extern s_CaInfo g_eca;
+extern s_CaInfo g_pca;
+extern s_CaInfo g_rca;
+extern s_CaInfo g_cca;
+
+int Server::sock_fd_ = -1;
+struct sockaddr_in Server::addr_;
+int Server::server_count_ = 10;
+std::mutex Server::server_mutex_;
+std::condition_variable Server::server_condition_;
 
 Server::Server(){
 }
@@ -38,38 +35,31 @@ int Server::Init(){
     if (check_ca() == COMMON_SUCCESS) {
         printf("Init check_ca succ\n");
         printf("Init init_ca start\n");
-        if (init_ca(ROOTCAKEY, &g_rootca_key, ROOTCACRT, &g_rootca_crt, 
-                    &g_rootca_buffer, &g_rootca_buffer_size, &g_rootca_hashid8) != COMMON_SUCCESS) {
+        if (init_ca(ROOTCAKEY, ROOTCACRT, &g_rootca) != COMMON_SUCCESS) {
             printf("Init init_rootca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(SUBROOTCAKEY, &g_subrootca_key, SUBROOTCACRT, &g_subrootca_crt, 
-                    &g_subrootca_buffer, &g_subrootca_buffer_size, &g_subrootca_hashid8) != COMMON_SUCCESS) {
+        if (init_ca(SUBROOTCAKEY, SUBROOTCACRT, &g_subrootca) != COMMON_SUCCESS) {
             printf("Init init_subrootca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(ECAKEY, &g_eca_key, ECACRT, &g_eca_crt, 
-                    &g_eca_buffer, &g_eca_buffer_size, &g_eca_hashid8) != COMMON_SUCCESS) {
+        if (init_ca(ECAKEY, ECACRT, &g_eca) != COMMON_SUCCESS) {
             printf("Init init_eca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(PCAKEY, &g_pca_key, PCACRT, &g_pca_crt, 
-                    &g_pca_buffer, &g_pca_buffer_size, &g_pca_hashid8) != COMMON_SUCCESS) {
+        if (init_ca(PCAKEY, PCACRT, &g_pca) != COMMON_SUCCESS) {
             printf("Init init_pca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(RCAKEY, &g_rca_key, RCACRT, &g_rca_crt, 
-                    &g_rca_buffer, &g_rca_buffer_size, &g_rca_hashid8) != COMMON_SUCCESS) {
+        if (init_ca(RCAKEY, RCACRT, &g_rca) != COMMON_SUCCESS) {
             printf("Init init_rca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(CCAKEY, &g_cca_key, CCACRT, &g_cca_crt, 
-                    &g_cca_buffer, &g_cca_buffer_size, &g_cca_hashid8) != COMMON_SUCCESS) {
+        if (init_ca(CCAKEY, CCACRT, &g_cca) != COMMON_SUCCESS) {
             printf("Init init_cca fail\n");
             return COMMON_ERROR;
         }
         printf("Init init_ca succ\n");
-        return COMMON_SUCCESS;
     }else{
         printf("Init check_ca fail\n");
         printf("Init create_ca start\n");
@@ -78,13 +68,13 @@ int Server::Init(){
             return COMMON_ERROR;
         }
         printf("Init create_ca succ\n");
-        return COMMON_SUCCESS;
     }
+    return COMMON_SUCCESS;
 }
 
 int Server::check_ca(){
     //check ca crt and key file
-    string filename[12];
+    std::string filename[12];
     filename[0] = ROOTCACRT;
     filename[1] = ROOTCAKEY;
     filename[2] = SUBROOTCACRT;
@@ -106,26 +96,25 @@ int Server::check_ca(){
     return COMMON_SUCCESS;
 }
 
-int Server::init_ca(string key_filename, EC_KEY** key, string crt_filename, Certificate_t** crt, 
-                    unsigned char** crt_buffer, unsigned long** crt_buffer_len, unsigned char** crt_hashid8){
+int Server::init_ca(std::string key_filename, std::string crt_filename, s_CaInfo* ca){
 
-    *key = Common::FileToKey(key_filename.c_str());
-    if (*key == NULL) {
+    ca->key = Common::FileToKey(key_filename.c_str());
+    if (ca->key == NULL) {
         printf("init_ca FileToKey: %s fail\n", key_filename.c_str());
         return COMMON_ERROR;
     }
-    *crt = CertificateManage::FileToCertificate(crt_filename.c_str());
-    if (crt == NULL) {
+    ca->crt = CertificateManage::FileToCertificate(crt_filename.c_str());
+    if (ca->crt == NULL) {
         printf("init_ca FileToCertificate: %s fail\n", crt_filename.c_str());
         return COMMON_ERROR;
     }
-    if (CertificateManage::CertificateToBuffer(crt_buffer, crt_buffer_len, *crt) != COMMON_SUCCESS) {
+    if (CertificateManage::CertificateToBuffer(&(ca->buffer), &(ca->blen), ca->crt) != COMMON_SUCCESS) {
         printf("init_ca CertificateToBuffer: %s fail\n", crt_filename.c_str());
         return COMMON_ERROR;
     }
     unsigned char* hash = NULL;
     size_t hlen = 0;
-    if (Common::Sm3Hash(*crt_buffer, *crt_buffer_len, &hash, &hlen) != COMMON_SUCCESS) {
+    if (Common::Sm3Hash(ca->buffer, ca->blen, &hash, &hlen) != COMMON_SUCCESS) {
         printf("init_ca Sm3Hash: %s fail\n", crt_filename.c_str());
         return COMMON_ERROR;
     }
@@ -136,34 +125,125 @@ int Server::init_ca(string key_filename, EC_KEY** key, string crt_filename, Cert
     }
     memcpy(hashid8, hash+32-8, 8);
     free(hash);
-    *crt_hashid8 = hashid8;
+    ca->hashid8 = hashid8;
     return COMMON_SUCCESS;
 }
 
 int Server::create_ca(){
+    //create root ca
+    if (create_ca_to_file(ROOT_CA_CRT, SubjectType_rootCa, NULL, NULL, ROOTCAKEY, ROOTCACRT, &g_rootca) != COMMON_SUCCESS) {
+        printf("create_ca create_ca_to_file root ca fail\n");
+        return COMMON_ERROR;
+    }
+    //create subroot ca
+    if (create_ca_to_file(SUBROOT_CA_CRT, SubjectType_rootCa, 
+                          g_rootca.hashid8, g_rootca.key, SUBROOTCAKEY, SUBROOTCACRT, &g_subrootca) != COMMON_SUCCESS) {
+        printf("create_ca create_ca_to_file subroot ca fail\n");
+        return COMMON_ERROR;
+    }
+    //create e ca
+    if (create_ca_to_file(E_CA_CRT, SubjectType_enrollmentAuthority, 
+                          g_subrootca.hashid8, g_subrootca.key, ECAKEY, ECACRT, &g_eca) != COMMON_SUCCESS) {
+        printf("create_ca create_ca_to_file e ca fail\n");
+        return COMMON_ERROR;
+    }
+    //create p ca
+    if (create_ca_to_file(P_CA_CRT, SubjectType_authorizationAuthority, 
+                          g_subrootca.hashid8, g_subrootca.key, PCAKEY, PCACRT, &g_pca) != COMMON_SUCCESS) {
+        printf("create_ca create_ca_to_file p ca fail\n");
+        return COMMON_ERROR;
+    }
+    //create r ca
+    if (create_ca_to_file(R_CA_CRT, SubjectType_authorizationAuthority, 
+                          g_subrootca.hashid8, g_subrootca.key, RCAKEY, RCACRT, &g_rca) != COMMON_SUCCESS) {
+        printf("create_ca create_ca_to_file r ca fail\n");
+        return COMMON_ERROR;
+    }
+    //create c ca
+    if (create_ca_to_file(C_CA_CRT, SubjectType_crlSigner, 
+                          g_subrootca.hashid8, g_subrootca.key, CCAKEY, CCACRT, &g_cca) != COMMON_SUCCESS) {
+        printf("create_ca create_ca_to_file c ca fail\n");
+        return COMMON_ERROR;
+    }
+    return COMMON_SUCCESS;
+}
+
+int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_hashid8, EC_KEY* sign_key,
+                              std::string key_filename, std::string crt_filename, s_CaInfo* ca){
     int ret = COMMON_ERROR;
-    //
+    EC_KEY* key = NULL;
+    Certificate_t* crt = NULL;
+    unsigned char* pub_key = NULL;
+    unsigned char* hash = NULL;
+    size_t hlen = 0;
+    unsigned char* hashid8 = NULL;
 
+    key = Common::CreateSm2KeyPair();
+    if (!key) {
+        printf("create_ca_to_file CreateSm2KeyPair fail\n");
+        goto err;
+    }
+    pub_key = Common::get_sm2_public_key(key);
+    if (!pub_key) {
+        printf("create_ca_to_file get_sm2_public_key fail\n");
+        goto err;
+    }
+    if (ctype == ROOT_CA_CRT) {
+        crt = CertificateManage::CreateCertificate(ctype, stype, pub_key, NULL, key);
+    }else{
+        crt = CertificateManage::CreateCertificate(ctype, stype, pub_key, sign_crt_hashid8, sign_key);
+    }
+    
+    if (!crt) {
+        printf("create_ca_to_file CreateCertificate crt fail\n");
+        goto err;
+    }
 
+    if(CertificateManage::CertificateToFile(crt_filename.c_str(), crt) !=COMMON_SUCCESS){
+        printf("create_ca_to_file CertificateToFile fail\n");
+        goto err;
+    }
+
+    if(Common::KeyToFile(key_filename.c_str(), key) != COMMON_SUCCESS){
+        printf("create_ca_to_file KeyToFile fail\n");
+        goto err;
+    }
+
+    if (CertificateManage::CertificateToBuffer(&(ca->buffer), &(ca->blen), crt) != COMMON_SUCCESS) {
+        printf("create_ca_to_file CertificateToBuffer: %s fail\n", crt_filename.c_str());
+        goto err;
+    }
+
+    if (Common::Sm3Hash(ca->buffer, ca->blen, &hash, &hlen) != COMMON_SUCCESS) {
+        printf("create_ca_to_file Sm3Hash: %s fail\n", crt_filename.c_str());
+        goto err;
+    }
+
+    hashid8 = (unsigned char* )malloc(8);
+    if (!hashid8) {
+        printf("create_ca_to_file malloc hashid8: %s fail\n", crt_filename.c_str());
+        goto err;
+    }
+    memcpy(hashid8, hash+32-8, 8);
+
+    ca->key = key;
+    ca->crt = crt;
+    ca->hashid8 = hashid8;
+
+    ret = COMMON_SUCCESS;
     err:{
-
+        if (pub_key) {
+            free(pub_key);
+        }
+        if (hash) {
+            free(hash);
+        }
     }
     return ret;
 }
 
-int Server::create_ca_(){
-    int ret = COMMON_ERROR;
-    //
 
-
-    err:{
-
-    }
-    return ret;
-}
-
-
-int Server::CreateSocket(const char* ip, uint16_t port){
+int Server::create_socket(){
 
     if ((sock_fd_ = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         printf("CreateSocket: socket() Failed!\n");
@@ -173,7 +253,7 @@ int Server::CreateSocket(const char* ip, uint16_t port){
     bzero(&addr_,sizeof(struct sockaddr_in));
     addr_.sin_family = AF_INET;
     addr_.sin_addr.s_addr = INADDR_ANY;
-    addr_.sin_port = htons(port); 
+    addr_.sin_port = htons(SERVER_PORT); 
 
     int enable = 1;
     if(setsockopt(sock_fd_, SOL_SOCKET, SO_REUSEADDR,  &enable, sizeof(int)) == -1){
@@ -193,67 +273,78 @@ int Server::CreateSocket(const char* ip, uint16_t port){
     return COMMON_SUCCESS;
 }
 
-int Server::Start(){
-
+void Server::Start(){
+    if (create_socket() != COMMON_SUCCESS) {
+         printf("Start: create_socket fail\n");
+         return;
+    }
+    printf("Start: create_socket succ\n");
     while (true) {
         struct sockaddr_in conn_addr_;
         int sin_size = sizeof(struct sockaddr_in);
         int conn = 0;
+        printf("Start: waiting for connect......\n");
         if((conn = accept(sock_fd_, (struct sockaddr*)&conn_addr_, &sin_size)) == -1){
              printf("Handler: accept socket error\n");
-             return COMMON_ERROR; 
+             return; 
         }
+        printf("Start: connected , recv msg......\n");
         unsigned char buffer[SERVER_DEFAULT_RECV_SIZE] = {};
         int len = 0;
-        if((len_ = recv(conn, (void*)buffer, SERVER_DEFAULT_RECV_SIZE, 0)) <= 0){
+        if((len = recv(conn, (void*)buffer, SERVER_DEFAULT_RECV_SIZE, 0)) <= 0){
              printf("Handler: recv msg fail\n");
-             return COMMON_ERROR; 
+             return; 
         }
-
         unsigned char cmd = 0xff;
         unsigned char* data = NULL;
         size_t dlen = 0;
         if(Message::MessageDecode(buffer, len, &cmd, &data, &dlen) != COMMON_SUCCESS){
              printf("Handler: MessageDecode fail\n");
-             return COMMON_ERROR; 
+             return; 
         }
-
-        unsigned char data_[dlen];
+        unsigned char data_[1024]={};
         memcpy(data_, data, dlen);
-        std::thread t;
+
+        Server::Wait();
         switch (cmd) {
             case 0x00:{
-                t = std::thread(Server::deal_with_C0, data_, dlen, conn);
+                std::thread t(Server::deal_with_C0, data_, dlen, conn);
+                t.detach();
                 break;
             }
             case 0x01:{
-                t = std::thread(Server::deal_with_C1, data_, dlen, conn);
+                std::thread t(Server::deal_with_C1, data_, dlen, conn);
+                t.detach();
                 break;
             }
             case 0x02:{
-                t = std::thread(Server::deal_with_C2, data_, dlen, conn);
+                std::thread t(Server::deal_with_C2, data_, dlen, conn);
+                t.detach();
                 break;
             }
             case 0x03:{
-                t = std::thread(Server::deal_with_C3, data_, dlen, conn);
+                std::thread t(Server::deal_with_C3, data_, dlen, conn);
+                t.detach();
                 break;
             }
             case 0x04:{
-                t = std::thread(Server::deal_with_C4, data_, dlen, conn);
+                std::thread t(Server::deal_with_C4, data_, dlen, conn);
+                t.detach();
                 break;
             }
             case 0x05:{
-                t = std::thread(Server::deal_with_C5, data_, dlen, conn);
+                std::thread t(Server::deal_with_C5, data_, dlen, conn);
+                t.detach();
                 break;
             }
             default:{
                 printf("Handler: unknow cmd type\n");
-                t = std::thread(Server::SendErrorCode, cmd);
+                std::thread t(Message::SendErrorCode, conn, cmd);
+                t.detach();
                 break;
             }
         }
-        t.join();
-    //  t.detach();
+
         if (data) {
             free(data);
         }
@@ -263,19 +354,20 @@ int Server::Start(){
 }
 
 void Server::deal_with_C0(unsigned char data[], size_t dlen, int sock){
+    std::cout<<"thread deal_with_C0 statrt"<<std::endl;
     unsigned char cmd = 0x00;
     int type = (int)(*data);
     int flag = 0;
     unsigned  char* msg = NULL;
-    size_t meln = 0;
+    size_t mlen = 0;
     switch (type) {
         case 1:{
             //send eca crt
-            if(Message::MessageEncode(cmd, g_eca_buffer, g_eca_buffer_size, &msg, &mlen) != COMMON_SUCCESS){
+            if(Message::MessageEncode(cmd, g_eca.buffer, g_eca.blen, &msg, &mlen) != COMMON_SUCCESS){
                 printf("deal_with_C0: MessageEncode fail\n");
                 break;
             }
-            if((Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS){
+            if(Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS){
                 printf("deal_with_C0: SendMsg fail\n");
                 free(msg);
                 break;
@@ -285,11 +377,11 @@ void Server::deal_with_C0(unsigned char data[], size_t dlen, int sock){
         }
         case 2:{
             //send pca crt
-            if(Message::MessageEncode(cmd, g_pca_buffer, g_pca_buffer_size, &msg, &mlen) != COMMON_SUCCESS){
+            if(Message::MessageEncode(cmd, g_pca.buffer, g_pca.blen, &msg, &mlen) != COMMON_SUCCESS){
                 printf("deal_with_C0: MessageEncode fail\n");
                 break;
             }
-            if((Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS){
+            if(Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS){
                 printf("deal_with_C0: SendMsg fail\n");
                 free(msg);
                 break;
@@ -299,11 +391,11 @@ void Server::deal_with_C0(unsigned char data[], size_t dlen, int sock){
         }
         case 3:{
             //send rca crt
-            if(Message::MessageEncode(cmd, g_rca_buffer, g_rca_buffer_size, &msg, &mlen) != COMMON_SUCCESS){
+            if(Message::MessageEncode(cmd, g_rca.buffer, g_rca.blen, &msg, &mlen) != COMMON_SUCCESS){
                 printf("deal_with_C0: MessageEncode fail\n");
                 break;
             }
-            if((Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS){
+            if(Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS){
                 printf("deal_with_C0: SendMsg fail\n");
                 free(msg);
                 break;
@@ -322,9 +414,12 @@ void Server::deal_with_C0(unsigned char data[], size_t dlen, int sock){
     if (flag == 0) {
         Message::SendErrorCode(sock, cmd);
     }
+    Server::Notify();
+    std::cout<<"thread deal_with_C0 end"<<std::endl;
 }
 
 void Server::deal_with_C1(unsigned char data[], size_t dlen, int sock){
+    std::cout<<"thread deal_with_C1 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x01;
     int flag = 0;
@@ -339,7 +434,7 @@ void Server::deal_with_C1(unsigned char data[], size_t dlen, int sock){
     unsigned char* buffer = NULL;
     size_t blen = 0;
 
-    if (Common::VerifyDeviceId(data, dlen) != COMMON_SUCCESS) {
+    if (Common::VerifyDeviceSerialNumber(data, dlen) != COMMON_SUCCESS) {
         printf("deal_with_C1: VerifyDeviceId fail\n");
         goto err;
     }
@@ -358,8 +453,8 @@ void Server::deal_with_C1(unsigned char data[], size_t dlen, int sock){
         printf("deal_with_C1: get_sm2_private_key fail\n");
         goto err;
     }
-    ecrt = CertificateManage::CreateCertificate(e_CertificateType.E_CA, 
-                                                               e_SubjectType.SubjectType_enrollmentCredential, pub_key, g_eca_hash, g_eca_key);
+
+    ecrt = CertificateManage::CreateCertificate(E_CA_CRT, SubjectType_enrollmentCredential, pub_key, g_eca.hashid8, g_eca.key);
     if (!ecrt) {
         printf("deal_with_C1: CreateCertificate ecrt fail\n");
         goto err;
@@ -407,10 +502,13 @@ void Server::deal_with_C1(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
+    Server::Notify();
+    std::cout<<"thread deal_with_C1 end"<<std::endl;
 }
 
 
 void Server::deal_with_C2(unsigned char data[], size_t dlen, int sock){
+    std::cout<<"thread deal_with_C2 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x02;
     int flag = 0;
@@ -428,7 +526,7 @@ void Server::deal_with_C2(unsigned char data[], size_t dlen, int sock){
         printf("deal_with_C2: BufferToCertificate fail\n");
         goto err;
     }
-    if (CertificateManage::CertificateVerify(g_eca_key, ecrt) != COMMON_SUCCESS) {
+    if (CertificateManage::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
         printf("deal_with_C2: CertificateVerify fail\n");
         goto err;
     }
@@ -451,6 +549,7 @@ void Server::deal_with_C2(unsigned char data[], size_t dlen, int sock){
         printf("deal_with_C2: MessageEncode pcrt fail\n");
         goto err;
     }
+
     if (Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS) {
         printf("deal_with_C2: SendMsg pcrt fail\n");
         goto err;
@@ -477,10 +576,13 @@ void Server::deal_with_C2(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
+    Server::Notify();
+    std::cout<<"thread deal_with_C2 end"<<std::endl;
 }
 
 
 void Server::deal_with_C3(unsigned char data[], size_t dlen, int sock){
+    std::cout<<"thread deal_with_C3 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x03;
     int flag = 0;
@@ -498,7 +600,7 @@ void Server::deal_with_C3(unsigned char data[], size_t dlen, int sock){
         printf("deal_with_C3: BufferToCertificate fail\n");
         goto err;
     }
-    if (CertificateManage::CertificateVerify(g_eca_key, ecrt) != COMMON_SUCCESS) {
+    if (CertificateManage::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
         printf("deal_with_C3: CertificateVerify fail\n");
         goto err;
     }
@@ -547,10 +649,13 @@ void Server::deal_with_C3(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
+    Server::Notify();
+    std::cout<<"thread deal_with_C3 end"<<std::endl;
 }
 
 
 void Server::deal_with_C4(unsigned char data[], size_t dlen, int sock){
+    std::cout<<"thread deal_with_C4 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x04;
     size_t error_crt_size = (int)(data[0]);
@@ -566,17 +671,17 @@ void Server::deal_with_C4(unsigned char data[], size_t dlen, int sock){
     size_t error_crt_end_gmtime = 0;
     size_t error_crt_start_difftime = 0;
     Crl_t* crl = NULL;
-    string name;
+    std::string name;
     if((ecrt = CertificateManage::BufferToCertificate(ecrt_buffer, ecrt_size)) == NULL){
         printf("deal_with_C4: BufferToCertificate fail\n");
         goto err;
     }
-    if (CertificateManage::CertificateVerify(g_eca_key, ecrt) != COMMON_SUCCESS) {
+    if (CertificateManage::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
         printf("deal_with_C4: CertificateVerify fail\n");
         goto err;
     }
 
-    if(Common::Sm3Hash(ecrt_buffer, ecrt_size, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
+    if(Common::Sm3Hash(error_crt_buffer, error_crt_size, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
         printf("deal_with_C4: Sm3Hash fail\n");
         goto err;
     }
@@ -585,17 +690,18 @@ void Server::deal_with_C4(unsigned char data[], size_t dlen, int sock){
         printf("deal_with_C4: BufferToCertificate fail\n");
         goto err;
     }
-    //maybe need some way to check this crt , then decide whether need to revoke it
+//  maybe need some way to check this crt , then decide whether need to revoke it
     error_crt_end_gmtime = Common::get_time_by_diff(error_crt->validityRestrictions.choice.timeStartAndEnd.endValidity);
     error_crt_start_difftime = error_crt->validityRestrictions.choice.timeStartAndEnd.startValidity;
 
-    if ((crl = CrlManage::CreateCRL(g_cca_key, g_subrootca_hashid8, g_cca_hashid8, error_crt_hash+32-10, error_crt_start_difftime)) == NULL) {
+    error_crt_end_gmtime = Common::get_time_now();
+    if ((crl = CrlManage::CreateCRL(false, error_crt_hash+32-10, error_crt_start_difftime)) == NULL) {
         printf("deal_with_C4: CreateCRL fail\n");
         goto err;
     }
 
-    name = Common::ToString(error_crt_end_gmtime); 
-    name = name + "_" + Common::ToString(crl->unsignedCrl.crlSerial);
+    name = Common::UnsignedLongToString(error_crt_end_gmtime); 
+    name = name + "_" + Common::UnsignedLongToString(crl->unsignedCrl.crlSerial);
     CrlManage::set_crl_list(name);
     name =  CRL_FILENAME+name;
 
@@ -613,30 +719,62 @@ void Server::deal_with_C4(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
+
+    Server::Notify();
+    std::cout<<"thread deal_with_C4 end"<<std::endl;
 }
 
 void Server::deal_with_C5(unsigned char data[], size_t dlen, int sock){
+    std::cout<<"thread deal_with_C5 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x03;
-    int flag = 0;
     Certificate_t* ecrt = NULL;
+    unsigned char* crls_buffer = NULL;
+    size_t crls_blen = 0;
+    size_t crls_num = 0;
+    int package = 0;
+    unsigned char crls_package_buff[1024];
+    size_t len = 0;
 
     if((ecrt = CertificateManage::BufferToCertificate(data, dlen)) == NULL){
         printf("deal_with_C5: BufferToCertificate fail\n");
         goto err;
     }
-    if (CertificateManage::CertificateVerify(g_eca_key, ecrt) != COMMON_SUCCESS) {
+    if (CertificateManage::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
         printf("deal_with_C5: CertificateVerify fail\n");
         goto err;
     }
 
-    if(CrlManage::send_crls(sock cmd) != COMMON_SUCCESS){
-        printf("deal_with_C5: send_crls fail\n");
+    if(CrlManage::get_crls(&crls_buffer, &crls_blen, &crls_num) != COMMON_SUCCESS){
+        printf("deal_with_C5: get_crls fail\n");
         goto err;
+    }
+
+    package = (crls_num%10 == 0)? (int)(crls_num/10) : (int)(crls_num/10)+1;
+    while (package >1) {
+        memcpy(crls_package_buff, crls_buffer+len, 81*10);
+        len+=81*10;
+        if (Message::send_crl_package(10, sock, cmd, crls_package_buff, 81*10) != COMMON_SUCCESS) {
+            printf("deal_with_C5: send_crl_package fail\n");
+            goto err;
+        }
+        package--;
+        crls_num = crls_num - 10;
+        usleep(1);
+    }
+    if (package == 1) {
+        memcpy(crls_package_buff, crls_buffer+len, 81*crls_num);
+        if(Message::send_crl_package(crls_num, sock, cmd, crls_package_buff, 81*crls_num) != COMMON_SUCCESS){
+            printf("deal_with_C5: send_crl_package fail\n");
+            goto err;
+        }
     }
 
     ret = COMMON_SUCCESS;
     err:{
+        if (crls_buffer) {
+            free(crls_buffer);
+        }
         if (ecrt) {
             ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Certificate, ecrt);
         }
@@ -644,19 +782,52 @@ void Server::deal_with_C5(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
+    Server::Notify();
+    std::cout<<"thread deal_with_C5 end"<<std::endl;
+}
+
+
+void Server::Notify(){
+    {
+        std::lock_guard<std::mutex> lck(server_mutex_);
+        server_count_++;
+    }
+    server_condition_.notify_one();
+}
+ 
+void Server::Wait(){
+    std::unique_lock<std::mutex> lck(server_mutex_);
+	while(server_count_ == 0){
+	    server_condition_.wait(lck);
+	}
+    server_count_--;
 }
 
 int main(int argc, char* argv[]) {
 
     if(Server::Init() != COMMON_SUCCESS){
-        printf("main: Init fail\n");
+        printf("main: Server::Init fail\n");
+        return 0;
+    }
+    if(CertificateManage::Init() != COMMON_SUCCESS){
+        printf("main: CertificateManage::Init fail\n");
+        return 0;
+    }
+    if(CrlManage::Init() != COMMON_SUCCESS){
+        printf("main: CrlManage::Init fail\n");
         return 0;
     }
 
+    printf("main: CertificateManage::Start\n");
+    CertificateManage::Start();
+    printf("main: CrlManage::Start\n");
+    CrlManage::Start();
+    printf("main: Server::Start\n");
     Server::Start();
-
+  
     return 0;
 }
 /**
 * @}
 **/
+

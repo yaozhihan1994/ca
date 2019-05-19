@@ -12,14 +12,22 @@
 
 
 #include "CertificateManage.h"
- 
-using namespace CERTIFICATE;
 
-std::list<string> CertificateManage::pcrt_list_;
+extern s_CaInfo g_rootca;
+extern s_CaInfo g_subrootca;
+extern s_CaInfo g_eca;
+extern s_CaInfo g_pca;
+extern s_CaInfo g_rca;
+extern s_CaInfo g_cca;
+
+std::list<std::string> CertificateManage::pcrt_list_;
 std::mutex CertificateManage::pcrt_mutex_;
 
-std::list<string> CertificateManage::rcrt_list_;
+std::list<std::string> CertificateManage::rcrt_list_;
 std::mutex CertificateManage::rcrt_mutex_;
+
+std::thread CertificateManage::pcrt_manage_thread_;
+std::thread CertificateManage::rcrt_manage_thread_;
 
 unsigned long CertificateManage::pcrt_serial_number_ = 0;
 unsigned long CertificateManage::rcrt_serial_number_ = 0;
@@ -142,7 +150,7 @@ int CertificateManage::CertificateSign(EC_KEY* key, Certificate_t* crt){
     unsigned char* sig = NULL;
     size_t slen = 0;
     unsigned char *msg = NULL;
-    int mlen = 0;
+    size_t mlen = 0;
 
     if(CertificateManage::CertificateToBuffer(&msg, &mlen, crt) != COMMON_SUCCESS){
         printf("CertificateSign: CertificateToBuffer fail\n");
@@ -169,7 +177,7 @@ int CertificateManage::CertificateSign(EC_KEY* key, Certificate_t* crt){
 int CertificateManage::CertificateVerify(EC_KEY* key, Certificate_t* crt){
     
     if (!key || !crt) {
-        return ret;
+        return COMMON_NULL_POINT;
     }
 
     int ret = COMMON_ERROR;
@@ -207,7 +215,7 @@ int CertificateManage::CertificateVerify(EC_KEY* key, Certificate_t* crt){
     return ret;
 }
 
-Certificate_t* CertificateManage::CreateCertificate(e_CertificateType ctype, e_SubjectType  stype, 
+Certificate_t* CertificateManage::CreateCertificate(int ctype, int  stype, 
                                                                                        unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key){
     int ret = COMMON_ERROR;
     Certificate_t* crt = 0;
@@ -230,7 +238,7 @@ Certificate_t* CertificateManage::CreateCertificate(e_CertificateType ctype, e_S
     crt->signature.choice.signature.size = SIGNATURE_LENGTH;
 
     crt->signerInfo = (SignerInfo_t*)calloc(1, sizeof(SignerInfo_t));
-    if (type == e_CertificateType.ROOT_CA) {
+    if (ctype == ROOT_CA_CRT) {
         crt->signerInfo->present = SignerInfo_PR_self;
         crt->signerInfo->choice.self = 0;
     }else{
@@ -250,7 +258,7 @@ Certificate_t* CertificateManage::CreateCertificate(e_CertificateType ctype, e_S
     crt->subjectInfo.subjectName.buf = (uint8_t* )malloc(subject_name_len);
     memset(crt->subjectInfo.subjectName.buf, 0, subject_name_len);
     memcpy(crt->subjectInfo.subjectName.buf, subject_name, subject_name_len);
-    crt->subjectInfo.subjectName.size = snlen;
+    crt->subjectInfo.subjectName.size = subject_name_len;
 
     crt->subjectInfo.subjectType = stype;
 
@@ -265,19 +273,22 @@ Certificate_t* CertificateManage::CreateCertificate(e_CertificateType ctype, e_S
         goto err;
     }
 
-    if(COMMON_SUCCESS != Common::SignData(key, crt->subjectInfo.subjectName.buf, buffer, blen, &sig, &slen)){
+    if(COMMON_SUCCESS != Common::SignData(sign_key, crt->subjectInfo.subjectName.buf, buffer, blen, &sig, &slen)){
         printf("CreateCertificate SignData fail\n");
         goto err;
     }
-
-    memcpy(crt->signature.choice.signature.buf, sig, CRT_SIGNATURE_LENGTH);
+    memcpy(crt->signature.choice.signature.buf, sig, SIGNATURE_LENGTH);
     ret = COMMON_SUCCESS;
+    //xer_fprint(stdout, &asn_DEF_Certificate, crt);
     err:{
         if (sig) {
             free(sig);
         }
+        if (crt && (ret != COMMON_SUCCESS)) {
+            ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Certificate, crt);
+        }
     }
-    return ret;
+    return crt;
 }
 
 void CertificateManage::pcrt_manage(){
@@ -292,12 +303,14 @@ void CertificateManage::pcrt_manage(){
 
         if (Common::get_hour_now() == 2) {
             pcrt_mutex_.lock();
-            for (std::list<string>::iterator i = pcrt_list_.begin(); i != pcrt_list_.end(); ){
-                string name(*i);
-                if (strtoul(name.substr(0, name.find("_"))) < Common::get_time_now()){
+            for (std::list<std::string>::iterator i = pcrt_list_.begin(); i != pcrt_list_.end(); ){
+                std::string name(*i);
+                if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < Common::get_time_now()){
                     pcrt_list_.erase(i++);
                     name = PCRTS + name;
                     remove(name.c_str());
+                }else{
+                    i++;
                 }
                 usleep(1);
             }
@@ -320,12 +333,14 @@ void CertificateManage::rcrt_manage(){
 
         if (Common::get_hour_now() == 2) {
             rcrt_mutex_.lock();
-            for (std::list<string>::iterator i = rcrt_list_.begin(); i != rcrt_list_.end(); ){
-                string name(*i);
-                if (strtoul(name.substr(0, name.find("_"))) < Common::get_time_now()){
+            for (std::list<std::string>::iterator i = rcrt_list_.begin(); i != rcrt_list_.end(); ){
+                std::string name(*i);
+                if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < Common::get_time_now()){
                     rcrt_list_.erase(i++);
                     name = RCRTS + name;
                     remove(name.c_str());
+                }else{
+                    i++;
                 }
                 usleep(1);
             }
@@ -337,7 +352,6 @@ void CertificateManage::rcrt_manage(){
 }
 
 int CertificateManage::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen){
-    std::lock_guard<std::mutex> lck(pcrt_mutex_);
     int ret = COMMON_ERROR;
     unsigned char* buffer = NULL;
     size_t blen = 0;
@@ -345,15 +359,17 @@ int CertificateManage::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsi
     size_t pcrt_len = 0;
     unsigned char* pkey = NULL;
     size_t pkey_len = 0;
-
-    for (std::list<string>::iterator i = pcrt_list_.begin(); i != pcrt_list_.end(); ) {
-        string name = *i;
+    std::lock_guard<std::mutex> lck(pcrt_mutex_);
+    for (std::list<std::string>::iterator i = pcrt_list_.begin(); i != pcrt_list_.end(); ) {
+        std::string name = *i;
         //end_time > now ? 
-        if ( strtoul(name.substr(0, name.find("_"))) > Common::get_time_now() ) {
+        if ( strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) > Common::get_time_now() ) {
+            name = PCRTS + name;
             if(Common::FileToBuffer(name.c_str(), &buffer, &blen) != COMMON_SUCCESS){
                 printf("CertificateManage: get_pcrt_and_pkey FileToBuffer fail\n");
                 goto err;
             }   
+
             pkey = (unsigned char* )malloc(PRIVATE_KEY_LENGTH);
             if (!pkey) {
                 printf("CertificateManage: get_pcrt_and_pkey malloc pkey fail\n");
@@ -371,8 +387,12 @@ int CertificateManage::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsi
             pkey_len = PRIVATE_KEY_LENGTH;
             pcrt_len = blen - PRIVATE_KEY_LENGTH;
 
+            *crt = pcrt;
+            *clen = pcrt_len;
+            *key = pkey;
+            *klen = pkey_len;
+
             pcrt_list_.erase(i++);
-            name = PCRTS + name;
             remove(name.c_str());
             break;
         }else{
@@ -402,10 +422,11 @@ int CertificateManage::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsi
     unsigned char* rkey = NULL;
     size_t rkey_len = 0;
 
-    for (std::list<string>::iterator i = rcrt_list_.begin(); i != rcrt_list_.end(); ) {
-        string name = *i;
+    for (std::list<std::string>::iterator i = rcrt_list_.begin(); i != rcrt_list_.end(); ) {
+        std::string name = *i;
         //end_time > now ? 
-        if ( strtoul(name.substr(0, name.find("_"))) > Common::get_time_now() ) {
+        if ( strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) > Common::get_time_now() ) {
+            name = RCRTS + name;
             if(Common::FileToBuffer(name.c_str(), &buffer, &blen) != COMMON_SUCCESS){
                 printf("CertificateManage: get_rcrt_and_rkey FileToBuffer fail\n");
                 goto err;
@@ -427,8 +448,12 @@ int CertificateManage::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsi
             rkey_len = PRIVATE_KEY_LENGTH;
             rcrt_len = blen - PRIVATE_KEY_LENGTH;
 
+            *crt = rcrt;
+            *clen = rcrt_len;
+            *key = rkey;
+            *klen = rkey_len;
+
             rcrt_list_.erase(i++);
-            name = RCRTS + name;
             remove(name.c_str());
             break;
         }else{
@@ -461,42 +486,49 @@ int CertificateManage::Init(){
 }
 
 
-void CertificateManage::init_pcrt_list(){
+void CertificateManage::Start(){
+    pcrt_manage_thread_ = std::thread(CertificateManage::pcrt_manage);
+    pcrt_manage_thread_.detach();
+    rcrt_manage_thread_ = std::thread(CertificateManage::rcrt_manage);
+    rcrt_manage_thread_.detach();
+}
+
+int CertificateManage::init_pcrt_list(){
     printf("CertificateManage init_pcrt_list start\n");
-    std::lock_guard<std::mutex> lck(pcrt_mutex_);
     DIR* dir = opendir(PCRTS);
     dirent* p = NULL;
     pcrt_list_.clear();
     while((p = readdir(dir)) != NULL){
         if(p->d_name[0] != '.'){
-            string name(p->d_name);
+            std::string name(p->d_name);
             pcrt_list_.push_back(name);
-            unsigned long sn = strtoul(name.substr(name.find("_") + 1));
+            unsigned long sn = strtoul(name.substr(name.find("_") + 1).c_str(), NULL, 10);
             pcrt_serial_number_ = sn > pcrt_serial_number_? sn : pcrt_serial_number_;
         }
     }
     closedir(dir);
     printf("CertificateManage pcrt_list_ size: %d\n",  pcrt_list_.size());
     printf("CertificateManage init_pcrt_list end\n");
+    return COMMON_SUCCESS;
 }
 
-void CertificateManage::init_rcrt_list(){
+int CertificateManage::init_rcrt_list(){
     printf("CertificateManage init_rcrt_list start\n");
-    std::lock_guard<std::mutex> lck(rcrt_mutex_);
-    DIR* dir = opendir(PCRTS);
+    DIR* dir = opendir(RCRTS);
     dirent* p = NULL;
     rcrt_list_.clear();
     while((p = readdir(dir)) != NULL){
         if(p->d_name[0] != '.'){
-            string name(p->d_name);
+            std::string name(p->d_name);
             rcrt_list_.push_back(name);
-            unsigned long sn = strtoul(name.substr(name.find("_") + 1));
+            unsigned long sn = strtoul(name.substr(name.find("_") + 1).c_str(), NULL, 10);
             rcrt_serial_number_ = sn > rcrt_serial_number_? sn : rcrt_serial_number_;
         }
     }
     closedir(dir);
     printf("CertificateManage rcrt_list_ size: %d\n",  rcrt_list_.size());
     printf("CertificateManage init_rcrt_list end\n");
+    return COMMON_SUCCESS;
 }
 
 int CertificateManage::create_a_pcrt(){
@@ -510,8 +542,8 @@ int CertificateManage::create_a_pcrt(){
     unsigned char* buffer = NULL;
     size_t blen = 0;
     unsigned long pcrt_end_gmtime = 0;
-    string crt_name(PCRTS);
-    string file_name;
+    std::string crt_name(PCRTS);
+    std::string file_name;
 
     if ((pkey = Common::CreateSm2KeyPair()) == NULL) {
         printf("create_a_pcrt: CreateSm2KeyPair pkey fail\n");
@@ -528,12 +560,12 @@ int CertificateManage::create_a_pcrt(){
         goto err;
     }
 
-    if((pcrt = CertificateManage::CreateCertificate(e_CertificateType.P_CRT, e_SubjectType.SubjectType_authorizationTicket,
-                                                    pub_key, g_pca_hashid8, g_pca_key)) == NULL){
+    if((pcrt = CertificateManage::CreateCertificate(P_CRT, SubjectType_authorizationTicket,
+                                                    pub_key, g_pca.hashid8, g_pca.key)) == NULL){
         printf("create_a_pcrt: CreateCertificate pcrt fail\n");
         goto err;
     }
-    pcrt_serial_number++;
+    pcrt_serial_number_++;
     pcrt_end_gmtime = Common::get_time_by_diff(pcrt->validityRestrictions.choice.timeStartAndEnd.endValidity);
 
     if (CertificateManage::CertificateToBuffer(&crt_buffer, &crt_len, pcrt) != COMMON_SUCCESS) {
@@ -551,7 +583,7 @@ int CertificateManage::create_a_pcrt(){
     memcpy(buffer, pri_key, PRIVATE_KEY_LENGTH);
     memcpy(buffer+PRIVATE_KEY_LENGTH, crt_buffer, crt_len);
 
-    file_name = Common::ToString(pcrt_end_gmtime) +"_"+ Common::ToString(pcrt_serial_number);
+    file_name = Common::UnsignedLongToString(pcrt_end_gmtime) +"_"+ Common::UnsignedLongToString(pcrt_serial_number_);
     crt_name+= file_name;
     if (Common::BufferToFile(crt_name.c_str(), buffer, blen) != COMMON_SUCCESS) {
         printf("create_a_pcrt: BufferToFile fail\n");
@@ -598,8 +630,8 @@ int CertificateManage::create_a_rcrt(){
     unsigned char* buffer = NULL;
     size_t blen = 0;
     unsigned long rcrt_end_gmtime = 0;
-    string crt_name(RCRTS);
-    string file_name;
+    std::string crt_name(RCRTS);
+    std::string file_name;
 
     if ((rkey = Common::CreateSm2KeyPair()) == NULL) {
         printf("create_a_rcrt: CreateSm2KeyPair rkey fail\n");
@@ -616,15 +648,15 @@ int CertificateManage::create_a_rcrt(){
         goto err;
     }
 
-    if((rcrt = CertificateManage::CreateCertificate(e_CertificateType.R_CRT, e_SubjectType.SubjectType_authorizationTicket,
-                                                    pub_key, g_rca_hashid8, g_rca_key)) == NULL){
+    if((rcrt = CertificateManage::CreateCertificate(R_CRT, SubjectType_authorizationTicket,
+                                                    pub_key, g_rca.hashid8, g_rca.key)) == NULL){
         printf("create_a_rcrt: CreateCertificate rcrt fail\n");
         goto err;
     }
-    rcrt_serial_number++;
+    rcrt_serial_number_++;
     rcrt_end_gmtime = Common::get_time_by_diff(rcrt->validityRestrictions.choice.timeStartAndEnd.endValidity);
 
-    if (CertificateManage::CertificateToBuffer(&crt_buffer, &crt_len, pcrt) != COMMON_SUCCESS) {
+    if (CertificateManage::CertificateToBuffer(&crt_buffer, &crt_len, rcrt) != COMMON_SUCCESS) {
         printf("create_a_rcrt: CertificateToBuffer fail\n");
         goto err;
     }
@@ -639,7 +671,7 @@ int CertificateManage::create_a_rcrt(){
     memcpy(buffer, pri_key, PRIVATE_KEY_LENGTH);
     memcpy(buffer+PRIVATE_KEY_LENGTH, crt_buffer, crt_len);
 
-    file_name = Common::ToString(rcrt_end_gmtime) +"_"+ Common::ToString(rcrt_serial_number);
+    file_name = Common::UnsignedLongToString(rcrt_end_gmtime) +"_"+ Common::UnsignedLongToString(rcrt_serial_number_);
     crt_name+= file_name;
     if (Common::BufferToFile(crt_name.c_str(), buffer, blen) != COMMON_SUCCESS) {
         printf("create_a_rcrt: BufferToFile fail\n");
@@ -653,7 +685,7 @@ int CertificateManage::create_a_rcrt(){
     ret = COMMON_SUCCESS;
     err:{
         if (rkey) {
-            EC_KEY_free(pkey);
+            EC_KEY_free(rkey);
         }
         if (pub_key) {
             free(pub_key);
@@ -678,3 +710,4 @@ int CertificateManage::create_a_rcrt(){
 /**
 * @}
 **/
+

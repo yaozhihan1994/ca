@@ -13,14 +13,14 @@
 #ifndef CERTIFICATE_H_
 #define CERTIFICATE_H_
 
+#include <stdio.h>
 #include <iostream>
 #include <list>
-#include <fstream>
+#include <thread>
+#include <mutex>
+#include <dirent.h>
 
-#include "asn/Certificate.h"
 #include "Common.h"
-
-namespace CERTIFICATE{
 
 #define PCRTS "pcrts/"
 #define RCRTS "rcrts/"
@@ -28,11 +28,7 @@ namespace CERTIFICATE{
 #define SUBJECT_INFO_NAME "xingyunhulian"
 #define PCRT_POOL 5
 #define RCRT_POOL 5
-#define DEVICE_SERIAL_NUMBER "device_serial_number"
-
-
 #define CERTIFICATE_VERSION 2
-
 
 class CertificateManage{
 public:
@@ -48,23 +44,21 @@ public:
     static int CertificateSign(EC_KEY* key, Certificate_t* crt);
     static int CertificateVerify(EC_KEY* key, Certificate_t* crt);
 
-    static Certificate_t* CreateCertificate(e_CertificateType ctype, e_SubjectType  stype, 
-                                                                       unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key);
+    static Certificate_t* CreateCertificate(int ctype, int  stype, 
+                                            unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key);
 
     static int get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen);
     static int get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen);
 
-    static void pcrt_manage();
-    static void rcrt_manage();
-
     static int Init();
+    static void Start();
 
 private:
     //filename "end_gmtime"_"crt_serial_number"
-    static list<string> pcrt_list_;
+    static std::list<std::string> pcrt_list_;
     static std::mutex pcrt_mutex_;
 
-    static list<string> rcrt_list_;
+    static std::list<std::string> rcrt_list_;
     static std::mutex rcrt_mutex_;
 
     static unsigned long pcrt_serial_number_;
@@ -76,8 +70,13 @@ private:
     static int create_a_pcrt();
     static int create_a_rcrt();
 
+    static void pcrt_manage();
+    static void rcrt_manage();
+
+    static std::thread pcrt_manage_thread_;
+    static std::thread rcrt_manage_thread_;
 };
-}
+
 #endif
 
 /**

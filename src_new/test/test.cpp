@@ -16,6 +16,7 @@
 #include <mutex>
 #include <list>
 using namespace std;
+/*
 class test{
 public:
 	 template<class T> static string ToString(const T& t){
@@ -30,9 +31,29 @@ for(int i = 0; i< b; i++){
 }
 cout<<endl;
 }
+*/
+mutex m;
+void test2(char a[], int b, int c){
+	lock_guard<mutex> lck(m);
+	printf("0x%02x\n",a[0]);
+	printf("0x%02x\n",a[1]);
+	sleep(2);
+}
 
+unsigned char* IntToUnsignedChar(unsigned int num){
+    unsigned char *ret = (unsigned char* )malloc(4);
+    if (!ret) {
+        printf("IntToUnsignedChar malloc fail\n");
+        return NULL;
+    }
+    ret[0] = num >> 24;
+    ret[1] = num >> 16;
+    ret[2] = num >> 8;
+    ret[3] = num;
+    return ret;
+}
 int main(){
-
+/*
 list<string> l;
 l.push_back("a");
 l.push_back("b");
@@ -57,6 +78,13 @@ lock_guard<mutex> lock(m);
 err:{
 
 }
+*/
+unsigned int a = 255;
+unsigned char* b = IntToUnsignedChar(a);
+for(int i = 0; i< 4; i++){
+  printf("0x%02x ",*(b+i));
+}
+
 
 getchar();
 return 0;
