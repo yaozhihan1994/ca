@@ -125,6 +125,109 @@ int CertificateManage::CertificateToBuffer(unsigned char** buffer, size_t* blen,
     }
 }
 
+int CertificateManage::get_sign_der_buffer(Certificate_t* crt, unsigned char** buffer, size_t* blen){
+    if (!crt) {
+        return COMMON_NULL_POINT;
+    }    
+    asn_enc_rval_t ec;
+    asn_enc_rval_t er;
+    //der verion
+    size_t version_len = 0;
+    er = der_encode(&asn_DEF_Uint8, (void *)&(crt->version), 0, NULL);
+    if(er.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+    version_len = er.encoded;
+    unsigned char version_buff[version_len];
+    ec = der_encode_to_buffer(&asn_DEF_Uint8, (void *)&(crt->version), (void*)(version_buff), version_len);
+    if(ec.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    } 
+
+    //der signerInfo
+    size_t signerInfo_len = 0;
+    er = der_encode(&asn_DEF_SignerInfo, (void *)(crt->signerInfo), 0, NULL);
+    if(er.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+    signerInfo_len = er.encoded;
+    unsigned char signerInfo_buff[signerInfo_len];
+    ec = der_encode_to_buffer(&asn_DEF_SignerInfo, (void *)(crt->signerInfo), (void*)(signerInfo_buff), signerInfo_len);
+    if(ec.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+
+    //der subjectInfo
+    size_t subjectInfo_len = 0;
+    er = der_encode(&asn_DEF_SubjectInfo, (void *)&(crt->subjectInfo), 0, NULL);
+    if(er.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+    subjectInfo_len = er.encoded;
+    unsigned char subjectInfo_buff[subjectInfo_len];
+    ec = der_encode_to_buffer(&asn_DEF_SignerInfo, (void *)&(crt->subjectInfo), (void*)(subjectInfo_buff), subjectInfo_len);
+    if(ec.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+
+    //der subjectAttributes
+    size_t subjectAttributes_len = 0;
+    er = der_encode(&asn_DEF_SubjectAttribute, (void *)&(crt->subjectAttributes), 0, NULL);
+    if(er.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+    subjectAttributes_len = er.encoded;
+    unsigned char subjectAttributes_buff[subjectAttributes_len];
+    ec = der_encode_to_buffer(&asn_DEF_SubjectAttribute, (void *)&(crt->subjectAttributes), (void*)(subjectAttributes_buff), subjectAttributes_len);
+    if(ec.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+
+    //der validityRestrictions
+    size_t validityRestrictions_len = 0;
+    er = der_encode(&asn_DEF_ValidityRestriction, (void *)&(crt->validityRestrictions), 0, NULL);
+    if(er.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+    validityRestrictions_len = er.encoded;
+    unsigned char validityRestrictions_buff[validityRestrictions_len];
+    ec = der_encode_to_buffer(&asn_DEF_ValidityRestriction, (void *)&(crt->validityRestrictions), (void*)(validityRestrictions_buff), validityRestrictions_len);
+    if(ec.encoded == -1) {
+        fprintf(stderr, "get_sign_der_buffer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+        return COMMON_ERROR;
+    }  
+
+    size_t buff_len = version_len+signerInfo_len+subjectInfo_len+subjectAttributes_len+validityRestrictions_len; 
+    unsigned char* buff = (unsigned char* )malloc(buff_len);
+    if (!buff) {
+        printf("get_sign_der_buffer malloc buff fail \n");
+        return COMMON_ERROR;
+    }
+    size_t tmp = 0;
+    memcpy(buff+tmp, version_buff, version_len);
+    tmp+= version_len;
+    memcpy(buff+tmp, signerInfo_buff, signerInfo_len);
+    tmp+= signerInfo_len;
+    memcpy(buff+tmp, subjectInfo_buff, subjectInfo_len);
+    tmp+= subjectInfo_len;
+    memcpy(buff+tmp, subjectAttributes_buff, subjectAttributes_len);
+    tmp+= subjectAttributes_len;
+    memcpy(buff+tmp, validityRestrictions_buff, validityRestrictions_len);
+
+    *buffer = buff;
+    *blen = buff_len;
+    return COMMON_SUCCESS;
+}
+
 Certificate_t* CertificateManage::BufferToCertificate(unsigned char* buffer, size_t blen){
     if (!buffer) {
         return NULL;
@@ -152,12 +255,17 @@ int CertificateManage::CertificateSign(EC_KEY* key, Certificate_t* crt){
     unsigned char *msg = NULL;
     size_t mlen = 0;
 
-    if(CertificateManage::CertificateToBuffer(&msg, &mlen, crt) != COMMON_SUCCESS){
-        printf("CertificateSign: CertificateToBuffer fail\n");
+    if(CertificateManage::get_sign_der_buffer(crt, &msg, &mlen) != COMMON_SUCCESS){
+        printf("CertificateSign: get_sign_der_buffer fail\n");
         goto err;
     }
 
-    if(Common::SignData(key, crt->subjectInfo.subjectName.buf, msg, mlen, &sig, &slen) != COMMON_SUCCESS){
+    if (crt->signature.choice.signature.buf == NULL) {
+        crt->signature.present = Signature_PR_signature;
+        crt->signature.choice.signature.buf = (uint8_t*)malloc(SIGNATURE_LENGTH);
+        crt->signature.choice.signature.size = SIGNATURE_LENGTH;
+    }
+    if (Common::SignData(key, crt->subjectInfo.subjectName.buf, msg, mlen, &sig, &slen) != COMMON_SUCCESS) {
         printf("CertificateSign: SignData fail\n");
         goto err;
     }
@@ -219,8 +327,8 @@ Certificate_t* CertificateManage::CreateCertificate(int ctype, int  stype,
                                                                                        unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key){
     int ret = COMMON_ERROR;
     Certificate_t* crt = 0;
-    unsigned char* subject_name = SUBJECT_INFO_NAME;
-    size_t subject_name_len = strlen(subject_name);
+    std::string subject_name = SUBJECT_INFO_NAME;
+    size_t subject_name_len = subject_name.length();
     unsigned char* buffer = NULL;
     size_t blen = 0;
     unsigned char* sig = NULL;
@@ -257,7 +365,7 @@ Certificate_t* CertificateManage::CreateCertificate(int ctype, int  stype,
 
     crt->subjectInfo.subjectName.buf = (uint8_t* )malloc(subject_name_len);
     memset(crt->subjectInfo.subjectName.buf, 0, subject_name_len);
-    memcpy(crt->subjectInfo.subjectName.buf, subject_name, subject_name_len);
+    memcpy(crt->subjectInfo.subjectName.buf, subject_name.c_str(), subject_name_len);
     crt->subjectInfo.subjectName.size = subject_name_len;
 
     crt->subjectInfo.subjectType = stype;
@@ -268,18 +376,24 @@ Certificate_t* CertificateManage::CreateCertificate(int ctype, int  stype,
 
     crt->version = CERTIFICATE_VERSION;
 
-    if(COMMON_SUCCESS != CertificateManage::CertificateToBuffer(&buffer, &blen, crt)){
-        printf("CreateCertificate CertificateToBuffer fail\n");
+//  if(COMMON_SUCCESS != CertificateManage::CertificateToBuffer(&buffer, &blen, crt)){
+//      printf("CreateCertificate CertificateToBuffer fail\n");
+//      goto err;
+//  }
+//
+//  if(COMMON_SUCCESS != Common::SignData(sign_key, crt->subjectInfo.subjectName.buf, buffer, blen, &sig, &slen)){
+//      printf("CreateCertificate SignData fail\n");
+//      goto err;
+//  }
+//  memcpy(crt->signature.choice.signature.buf, sig, SIGNATURE_LENGTH);
+
+    if(COMMON_SUCCESS != CertificateManage::CertificateSign(sign_key, crt)){
+        printf("CreateCertificate CertificateSign fail\n");
         goto err;
     }
 
-    if(COMMON_SUCCESS != Common::SignData(sign_key, crt->subjectInfo.subjectName.buf, buffer, blen, &sig, &slen)){
-        printf("CreateCertificate SignData fail\n");
-        goto err;
-    }
-    memcpy(crt->signature.choice.signature.buf, sig, SIGNATURE_LENGTH);
     ret = COMMON_SUCCESS;
-    //xer_fprint(stdout, &asn_DEF_Certificate, crt);
+    xer_fprint(stdout, &asn_DEF_Certificate, crt);
     err:{
         if (sig) {
             free(sig);

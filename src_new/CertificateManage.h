@@ -41,6 +41,9 @@ public:
     static int CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt);
     static Certificate_t* BufferToCertificate(unsigned char* buffer, size_t blen);
 
+    //need free
+    static int get_sign_der_buffer(Certificate_t* crt, unsigned char** buffer, size_t* blen);
+
     static int CertificateSign(EC_KEY* key, Certificate_t* crt);
     static int CertificateVerify(EC_KEY* key, Certificate_t* crt);
 

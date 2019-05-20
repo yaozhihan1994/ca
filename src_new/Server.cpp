@@ -21,7 +21,7 @@ extern s_CaInfo g_cca;
 
 int Server::sock_fd_ = -1;
 struct sockaddr_in Server::addr_;
-int Server::server_count_ = 10;
+int Server::server_count_ = 2;
 std::mutex Server::server_mutex_;
 std::condition_variable Server::server_condition_;
 
@@ -188,12 +188,13 @@ int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_has
         printf("create_ca_to_file get_sm2_public_key fail\n");
         goto err;
     }
+
     if (ctype == ROOT_CA_CRT) {
         crt = CertificateManage::CreateCertificate(ctype, stype, pub_key, NULL, key);
     }else{
         crt = CertificateManage::CreateCertificate(ctype, stype, pub_key, sign_crt_hashid8, sign_key);
     }
-    
+
     if (!crt) {
         printf("create_ca_to_file CreateCertificate crt fail\n");
         goto err;
@@ -280,80 +281,89 @@ void Server::Start(){
     }
     printf("Start: create_socket succ\n");
     while (true) {
+        Server::Wait();
         struct sockaddr_in conn_addr_;
         int sin_size = sizeof(struct sockaddr_in);
         int conn = 0;
         printf("Start: waiting for connect......\n");
-        if((conn = accept(sock_fd_, (struct sockaddr*)&conn_addr_, &sin_size)) == -1){
+        if((conn = accept(sock_fd_, (struct sockaddr*)&conn_addr_, (socklen_t*)&sin_size)) == -1){
              printf("Handler: accept socket error\n");
              return; 
         }
-        printf("Start: connected , recv msg......\n");
-        unsigned char buffer[SERVER_DEFAULT_RECV_SIZE] = {};
-        int len = 0;
-        if((len = recv(conn, (void*)buffer, SERVER_DEFAULT_RECV_SIZE, 0)) <= 0){
-             printf("Handler: recv msg fail\n");
-             return; 
-        }
-        unsigned char cmd = 0xff;
-        unsigned char* data = NULL;
-        size_t dlen = 0;
-        if(Message::MessageDecode(buffer, len, &cmd, &data, &dlen) != COMMON_SUCCESS){
-             printf("Handler: MessageDecode fail\n");
-             return; 
-        }
-        unsigned char data_[1024]={};
-        memcpy(data_, data, dlen);
-
-        Server::Wait();
-        switch (cmd) {
-            case 0x00:{
-                std::thread t(Server::deal_with_C0, data_, dlen, conn);
-                t.detach();
-                break;
-            }
-            case 0x01:{
-                std::thread t(Server::deal_with_C1, data_, dlen, conn);
-                t.detach();
-                break;
-            }
-            case 0x02:{
-                std::thread t(Server::deal_with_C2, data_, dlen, conn);
-                t.detach();
-                break;
-            }
-            case 0x03:{
-                std::thread t(Server::deal_with_C3, data_, dlen, conn);
-                t.detach();
-                break;
-            }
-            case 0x04:{
-                std::thread t(Server::deal_with_C4, data_, dlen, conn);
-                t.detach();
-                break;
-            }
-            case 0x05:{
-                std::thread t(Server::deal_with_C5, data_, dlen, conn);
-                t.detach();
-                break;
-            }
-            default:{
-                printf("Handler: unknow cmd type\n");
-                std::thread t(Message::SendErrorCode, conn, cmd);
-                t.detach();
-                break;
-            }
-        }
-
-        if (data) {
-            free(data);
-        }
+        std::thread t(Server::Handler, conn, conn_addr_);
+        t.detach();
+//      t.join();
         usleep(1);
     }
 
 }
 
-void Server::deal_with_C0(unsigned char data[], size_t dlen, int sock){
+void Server::Handler(int sock, struct sockaddr_in addr){
+    printf("Handler: connected , recv msg......\n");
+    unsigned char buffer[SERVER_DEFAULT_RECV_SIZE] = {};
+    int len = 0;
+    struct timeval timeout={3,0};//3s
+    int ret=setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
+    if (ret == -1) {
+         printf("Handler: setsockopt fail\n");
+         return;
+    }
+    while (true) {
+        if ((len = recv(sock, (void *)buffer, SERVER_DEFAULT_RECV_SIZE, 0)) <= 0) {
+            printf("Handler: recv msg timeout\n");
+            break;
+        }
+        unsigned char cmd = 0xff;
+        unsigned char* data = NULL;
+        size_t dlen = 0;
+        printf("Handler: recv msg suc , message decoding......\n");
+        if(Message::MessageDecode(buffer, len, &cmd, &data, &dlen) != COMMON_SUCCESS){
+             printf("Handler: MessageDecode fail\n");
+             return; 
+        }
+        printf("Handler: recv msg suc , message decoded succ\n");
+        switch (cmd) {
+            case 0x00:{
+                Server::deal_with_C0(data, dlen, sock);
+                break;
+            }
+            case 0x01:{
+                Server::deal_with_C1(data, dlen, sock);
+                break;
+            }
+            case 0x02:{
+                Server::deal_with_C2(data, dlen, sock);
+                break;
+            }
+            case 0x03:{
+                Server::deal_with_C3(data, dlen, sock);
+                break;
+            }
+            case 0x04:{
+                Server::deal_with_C4(data, dlen, sock);
+                break;
+            }
+            case 0x05:{
+                Server::deal_with_C5(data, dlen, sock);
+                break;
+            }
+            default:{
+                printf("Handler: unknow cmd type\n");
+                Message::SendErrorCode(sock, cmd);
+                break;
+            }
+        }
+        if (data) {
+            free(data);
+        }
+        usleep(1);
+    }
+    close(sock);
+    Server::Notify();
+    printf("Handler: end\n");
+}
+
+void Server::deal_with_C0(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C0 statrt"<<std::endl;
     unsigned char cmd = 0x00;
     int type = (int)(*data);
@@ -414,11 +424,10 @@ void Server::deal_with_C0(unsigned char data[], size_t dlen, int sock){
     if (flag == 0) {
         Message::SendErrorCode(sock, cmd);
     }
-    Server::Notify();
     std::cout<<"thread deal_with_C0 end"<<std::endl;
 }
 
-void Server::deal_with_C1(unsigned char data[], size_t dlen, int sock){
+void Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C1 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x01;
@@ -502,12 +511,11 @@ void Server::deal_with_C1(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
-    Server::Notify();
     std::cout<<"thread deal_with_C1 end"<<std::endl;
 }
 
 
-void Server::deal_with_C2(unsigned char data[], size_t dlen, int sock){
+void Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C2 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x02;
@@ -576,12 +584,11 @@ void Server::deal_with_C2(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
-    Server::Notify();
     std::cout<<"thread deal_with_C2 end"<<std::endl;
 }
 
 
-void Server::deal_with_C3(unsigned char data[], size_t dlen, int sock){
+void Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C3 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x03;
@@ -649,12 +656,10 @@ void Server::deal_with_C3(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
-    Server::Notify();
     std::cout<<"thread deal_with_C3 end"<<std::endl;
 }
 
-
-void Server::deal_with_C4(unsigned char data[], size_t dlen, int sock){
+void Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C4 start"<<std::endl;
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x04;
@@ -719,31 +724,40 @@ void Server::deal_with_C4(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
-
-    Server::Notify();
     std::cout<<"thread deal_with_C4 end"<<std::endl;
 }
 
-void Server::deal_with_C5(unsigned char data[], size_t dlen, int sock){
+void Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C5 start"<<std::endl;
     int ret = COMMON_ERROR;
+    int i;
     unsigned char cmd = 0x03;
     Certificate_t* ecrt = NULL;
     unsigned char* crls_buffer = NULL;
     size_t crls_blen = 0;
     size_t crls_num = 0;
     int package = 0;
+    unsigned char *package_uc = NULL;
     unsigned char crls_package_buff[1024];
     size_t len = 0;
+    int package_sum = 0;
+    unsigned char *package_sum_uc = NULL;
+    unsigned char tmp[4]={};
+    size_t tmp2 = 0; 
+    size_t tmp3 = 0; 
+    size_t tmp4 = 0; 
 
-    if((ecrt = CertificateManage::BufferToCertificate(data, dlen)) == NULL){
-        printf("deal_with_C5: BufferToCertificate fail\n");
-        goto err;
-    }
-    if (CertificateManage::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
-        printf("deal_with_C5: CertificateVerify fail\n");
-        goto err;
-    }
+    unsigned char* msg = NULL;
+    size_t mlen = 0;
+
+//  if((ecrt = CertificateManage::BufferToCertificate(data, dlen)) == NULL){
+//      printf("deal_with_C5: BufferToCertificate fail\n");
+//      goto err;
+//  }
+//  if (CertificateManage::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
+//      printf("deal_with_C5: CertificateVerify fail\n");
+//      goto err;
+//  }
 
     if(CrlManage::get_crls(&crls_buffer, &crls_blen, &crls_num) != COMMON_SUCCESS){
         printf("deal_with_C5: get_crls fail\n");
@@ -751,29 +765,60 @@ void Server::deal_with_C5(unsigned char data[], size_t dlen, int sock){
     }
 
     package = (crls_num%10 == 0)? (int)(crls_num/10) : (int)(crls_num/10)+1;
-    while (package >1) {
-        memcpy(crls_package_buff, crls_buffer+len, 81*10);
-        len+=81*10;
-        if (Message::send_crl_package(10, sock, cmd, crls_package_buff, 81*10) != COMMON_SUCCESS) {
-            printf("deal_with_C5: send_crl_package fail\n");
+    package_sum = package;
+    package_sum_uc = Common::IntToUnsignedChar(package_sum);
+    if (!package_sum_uc) {
+        printf("deal_with_C5: IntToUnsignedChar fail\n");
+        goto err;
+    }
+    while (package > 0) {
+        memcpy(crls_package_buff+tmp3, package_sum_uc + 2, 2);
+        tmp3+=2;
+        package_uc = Common::IntToUnsignedChar(package);
+        if (!package_uc) {
+            printf("deal_with_C5: IntToUnsignedChar fail\n");
             goto err;
         }
+        memcpy(crls_package_buff+tmp3, package_uc + 2, 2);
+        tmp3+=2;
+        free(package_uc);
+
+        if (package != 1) tmp4 =10;
+        else tmp4 = crls_num;
+     
+        for (i = 0; i<tmp4; i++) {
+            memcpy(tmp+2, crls_buffer + len, 2);
+            tmp2 = Common::UnsignedCharToInt(tmp);
+            memcpy(crls_package_buff + tmp3, crls_buffer + len, 2);
+            len+=2;
+            tmp3+=2;
+            memcpy(crls_package_buff + tmp3, crls_buffer + len, tmp2);
+            len+=tmp2;
+            tmp3+=tmp2;
+        }
+
+        if (Message::MessageEncode(cmd, crls_package_buff, tmp3, &msg, &mlen) != COMMON_SUCCESS) {
+            printf("deal_with_C5: MessageEncode crls_package_buff fail\n");
+            goto err;
+        }
+        if (Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS) {
+            printf("deal_with_C5: SendMsg fail\n");
+            goto err;
+        }
+        free(msg);
+        tmp3 = 0;
         package--;
         crls_num = crls_num - 10;
         usleep(1);
-    }
-    if (package == 1) {
-        memcpy(crls_package_buff, crls_buffer+len, 81*crls_num);
-        if(Message::send_crl_package(crls_num, sock, cmd, crls_package_buff, 81*crls_num) != COMMON_SUCCESS){
-            printf("deal_with_C5: send_crl_package fail\n");
-            goto err;
-        }
     }
 
     ret = COMMON_SUCCESS;
     err:{
         if (crls_buffer) {
             free(crls_buffer);
+        }
+        if (package_sum_uc) {
+            free(package_sum_uc);
         }
         if (ecrt) {
             ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Certificate, ecrt);
@@ -782,7 +827,6 @@ void Server::deal_with_C5(unsigned char data[], size_t dlen, int sock){
             Message::SendErrorCode(sock, cmd);
         }
     }
-    Server::Notify();
     std::cout<<"thread deal_with_C5 end"<<std::endl;
 }
 
@@ -824,9 +868,14 @@ int main(int argc, char* argv[]) {
     CrlManage::Start();
     printf("main: Server::Start\n");
     Server::Start();
-  
-    return 0;
 }
+
+
+//CertMng
+//CertOp
+//CRLMng
+//id = 10
+
 /**
 * @}
 **/

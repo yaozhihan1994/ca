@@ -58,6 +58,11 @@ int Common::SignData(EC_KEY* key, const char* id, const unsigned char* msg, size
 
     int ret = COMMON_ERROR;
     ECDSA_SIG* signature = NULL;
+    BIGNUM* r = NULL;
+    BIGNUM* s = NULL;
+    unsigned char cr[32]={};
+    unsigned char cs[32]={};
+    unsigned char* buffer = NULL;
     int slen = 0;
     
     signature = SM2_do_sign(key, EVP_sm3(), id, msg, msg_len);
@@ -66,13 +71,40 @@ int Common::SignData(EC_KEY* key, const char* id, const unsigned char* msg, size
         goto err;
     }
 
-    slen = i2d_ECDSA_SIG(signature, sig);
-    if (slen == 0) {
-        printf("SignData: i2d_ECDSA_SIG fail\n");
+    ECDSA_SIG_get0(signature, &r, &s);
+    if (!r || !s) {
+        printf("SignData: ECDSA_SIG_get0 fail\n");
         goto err;
     }
 
-    *sig_len = slen;
+    if (!BN_bn2bin(r, cr)) {
+        printf("SignData BN_bn2bin failed\n");
+        goto err;
+    }
+
+    if (!BN_bn2bin(s, cs)) {
+        printf("SignData BN_bn2bin failed\n");
+        goto err;
+    }
+
+    buffer = (unsigned char* )malloc(64);
+    if (!buffer) {
+        printf("SignData malloc buffer failed\n");
+        goto err;
+    }
+
+    memcpy(buffer, cr, 32);
+    memcpy(buffer+32, cs, 32);
+
+    *sig = buffer;
+    *sig_len = 64;
+//  slen = i2d_ECDSA_SIG(signature, sig);
+//  if (slen == 0) {
+//      printf("SignData: i2d_ECDSA_SIG fail\n");
+//      goto err;
+//  }
+//
+//  *sig_len = slen;
     ret = COMMON_SUCCESS;
     err:{
         if (signature) {
@@ -89,10 +121,35 @@ int Common::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_l
     }
     int ret = COMMON_ERROR;
     ECDSA_SIG *ecdsa_sig = NULL;
-    ecdsa_sig = d2i_ECDSA_SIG(NULL, &sig, sig_len);
+//  ecdsa_sig = d2i_ECDSA_SIG(NULL, &sig, sig_len);
+//  if (!ecdsa_sig) {
+//      printf("VerifySignedData: d2i_ECDSA_SIG fail\n");
+//      goto err;
+//  }
+    unsigned char cr[32];
+    memcpy(cr, sig, 32);
+    unsigned char cs[32];
+    memcpy(cs, sig+32, 32);
+
+    BIGNUM* r;
+    BIGNUM* s;
+
+    r = BN_bin2bn(cr, 32, NULL);
+    if (!r) {
+        printf("VerifySignedData: BN_bin2bn r fail\n");
+        return NULL;
+    }
+
+    s = BN_bin2bn(cs, 32, NULL);
+    if (!s) {
+        printf("VerifySignedData: BN_bin2bn s fail\n");
+        return NULL;
+    }
+
+    ECDSA_SIG_set0(ecdsa_sig, r, s);
     if (!ecdsa_sig) {
-        printf("VerifySignedData: d2i_ECDSA_SIG fail\n");
-        goto err;
+        printf("VerifySignedData: ECDSA_SIG_set0 fail\n");
+        return NULL;
     }
 
     if (1 != SM2_do_verify(key, EVP_sm3(), ecdsa_sig, id, msg, msg_len)) {
@@ -512,21 +569,20 @@ unsigned char* Common::get_sm2_public_key(const EC_KEY* key){
         goto err;
     }
 
-    pub = (unsigned char* )calloc(65, sizeof(unsigned char));
+    pub = (unsigned char* )calloc(PUBLIC_KEY_LENGTH, sizeof(unsigned char));
     if (!pub) {
         printf("get_sm2_public_key calloc pub_key failed\n");
         goto err;
     }
-    memset(pub, 0x04, 1);
 
-    if (!BN_bn2bin(x, pub + 1)) {
+    if (!BN_bn2bin(x, pub)) {
         printf("get_sm2_public_key BN_bn2bin failed\n");
         free(pub);
         pub = NULL;
         goto err;
     }
 
-    if (!BN_bn2bin(y, pub + 1 + 32)) {
+    if (!BN_bn2bin(y, pub+ 32)) {
         printf("get_sm2_public_key BN_bn2bin failed\n");
         free(pub);
         pub = NULL;

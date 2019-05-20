@@ -153,26 +153,6 @@ int Message::SendErrorCode(int sock, unsigned char cmd){
     return ret;
 }
 
-int Message::send_crl_package(int num, int sock, unsigned char cmd, unsigned char* buffer, size_t blen){
-    int ret = COMMON_ERROR;
-    unsigned char* msg = NULL;
-    size_t mlen = 0;
-    if (Message::MessageEncode(cmd, buffer, blen, &msg, &mlen) != COMMON_SUCCESS) {
-        printf("deal_with_C3: MessageEncode pcrt fail\n");
-        goto err;
-    }
-    if (Message::SendMsg(sock, msg, mlen) != COMMON_SUCCESS) {
-        printf("deal_with_C3: SendMsg pcrt fail\n");
-        goto err;
-    }
-    ret = COMMON_SUCCESS;
-    err:{
-        if (msg) {
-            free(msg);
-        }
-    }
-    return ret;
-}
 
 /**
 * @}

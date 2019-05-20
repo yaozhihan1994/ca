@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <thread>
 using namespace std;
 
 struct sockaddr_in addr_;
@@ -50,16 +51,9 @@ int create_socket(){
 
 
 void Recv(){
-	struct sockaddr_in conn_addr_;
-	int sin_size = sizeof(struct sockaddr_in);
-	int conn = 0;
-	if((conn = accept(sock, (struct sockaddr*)&conn_addr_, (socklen_t*)&sin_size)) == -1){
-	     printf("Handler: accept socket error\n");
-	     return;
-	}
         unsigned char buffer[1024] = {};
         int len = 0;
-        if((len = recv(conn, (void*)buffer, 1024, 0)) <= 0){
+        if((len = recv(sock, (void*)buffer, 1024, 0)) <= 0){
              printf("Handler: recv msg fail\n");
              return; 
         }
@@ -70,20 +64,11 @@ void Recv(){
 	printf("\n");
 }
 
-int main(){
-	if (create_socket() != 0) {
-		printf("Start: create_socket fail\n");
-		return 0;
-	}
-
- 	if (connect(sock, (struct sockaddr *)&addr_,sizeof(struct sockaddr_in)) == -1){
-		perror("connect error"); 
-		exit(1);
-     	} 
+void Send(){
 
 	unsigned char test[10] = {0xff, 0xff, 0x00, 0x00, 0x00, 0x02, 0x05, 0x05, 0x02, 0xff};
 	size_t len = 10;
-
+while(true){
 	if(send(sock, test, len, 0) == -1){
 		perror("send fail");
 	}
@@ -92,6 +77,27 @@ int main(){
 		printf("0x%02x ",*(test+i));
 	}
 	printf("\n");
+	sleep(1);
+}
+}
+
+int main(){
+	if (create_socket() != 0) {
+		printf("Start: create_socket fail\n");
+		return 0;
+	}
+
+
+ 	if (connect(sock, (struct sockaddr *)&addr_,sizeof(struct sockaddr_in)) == -1){
+		perror("connect error"); 
+		exit(1);
+     	} 
+	thread t(Recv);
+	t.detach();
+	thread tt(Send);
+	tt.detach();
+	
+	
 
 	getchar();
 return 0;

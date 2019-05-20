@@ -23,6 +23,7 @@ extern s_CaInfo g_cca;
 std::thread CrlManage::crl_manage_thread_;
 std::list<std::string> CrlManage::crl_list_;
 std::mutex CrlManage::crl_mutex_;
+std::mutex CrlManage::crl_serial_mutex_;
 unsigned long CrlManage::crl_serial_number_ = 0;
 
 int CrlManage::CrlToFile(const char* filename, Crl_t *crl){
@@ -208,7 +209,7 @@ Crl_t* CrlManage::CreateCRL(bool is_first, unsigned char* hashid10, unsigned lon
         printf("CreateCRL: set_crl_serial_number fail\n");
         goto err;
     }
-    //xer_fprint(stdout, &asn_DEF_Crl, crl);
+    xer_fprint(stdout, &asn_DEF_Crl, crl);
     ret = COMMON_SUCCESS;
     err:{
         if (crl && (ret != COMMON_SUCCESS)) {
@@ -227,8 +228,14 @@ int CrlManage::CrlSign(EC_KEY* key, Crl_t* crl){
     unsigned char* buffer = NULL;
     size_t blen = 0;
     ECDSA_SIG* signature = NULL;
+//  unsigned char* sig = NULL;
+//  size_t slen = 0;
+
+    BIGNUM* r = NULL;
+    BIGNUM* s = NULL;
+    unsigned char cr[32]={};
+    unsigned char cs[32]={};
     unsigned char* sig = NULL;
-    size_t slen = 0;
 
     if(ToBeSignedCrlToBuffer(&buffer, &blen, &(crl->unsignedCrl)) != COMMON_SUCCESS){
         printf("CrlSign: ToBeSignedCrlToBuffer fail\n");
@@ -240,11 +247,41 @@ int CrlManage::CrlSign(EC_KEY* key, Crl_t* crl){
         printf("CrlSign: SM2_do_sign fail\n");
         goto err;
     }
-    slen = i2d_ECDSA_SIG(signature, &sig);
-    if (slen == 0) {
-        printf("CrlSign: i2d_ECDSA_SIG fail\n");
+
+    ECDSA_SIG_get0(signature, &r, &s);
+    if (!r || !s) {
+        printf("CrlSign: ECDSA_SIG_get0 fail\n");
         goto err;
-    }                       
+    }
+
+    if (!BN_bn2bin(r, cr)) {
+        printf("CrlSign BN_bn2bin failed\n");
+        goto err;
+    }
+
+    if (!BN_bn2bin(s, cs)) {
+        printf("CrlSign BN_bn2bin failed\n");
+        goto err;
+    }
+
+    sig = (unsigned char* )malloc(64);
+    if (!sig) {
+        printf("CrlSign malloc sig failed\n");
+        goto err;
+    }
+
+    memcpy(sig, cr, 32);
+    memcpy(sig+32, cs, 32);
+
+//  slen = i2d_ECDSA_SIG(signature, &sig);
+//  if (slen == 0) {
+//      printf("CrlSign: i2d_ECDSA_SIG fail\n");
+//      goto err;
+//  }
+    if (crl->signature.choice.signature.buf == NULL) {
+        crl->signature.choice.signature.buf = (uint8_t* )malloc(64);
+        crl->signature.choice.signature.size = 64;
+    }
     memcpy(crl->signature.choice.signature.buf, sig, SIGNATURE_LENGTH);
 
     ret = COMMON_SUCCESS;
@@ -357,7 +394,7 @@ int CrlManage::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
     int len = 0;
     std::lock_guard<std::mutex> lck(crl_mutex_);
     //crl length is not sure, for now is 79, size length = 2, so one crl is 81 bits  
-    unsigned char *buff = (unsigned char*)malloc(81 * crl_list_.size());
+    unsigned char *buff = (unsigned char*)malloc((CRL_MAX_LENGTH+2) * crl_list_.size());
     if (!buff) {
         printf("get_crls: malloc buff fail\n");
         return COMMON_ERROR;
@@ -412,6 +449,7 @@ unsigned long CrlManage::get_crl_serial_number(){
 }
 
 int CrlManage::set_crl_serial_number(unsigned long sn){
+    std::lock_guard<std::mutex> lck(crl_serial_mutex_);
     std::fstream fs;
     fs.open(CRL_SERIAL_NUMBER, std::ios::out);
     if (!fs) {

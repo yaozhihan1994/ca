@@ -27,7 +27,7 @@
 #define CRL_FILENAME "crls/"
 #define CRL_SERIAL_NUMBER "serial_number/crl_serial_number"
 #define CRL_VERSION 1
-
+#define CRL_MAX_LENGTH 79
 
 class CrlManage{
 public:
@@ -61,6 +61,7 @@ private:
 
     static std::list<std::string> crl_list_;
     static std::mutex crl_mutex_;
+    static std::mutex crl_serial_mutex_;
     static unsigned long crl_serial_number_;
 };
 

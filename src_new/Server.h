@@ -19,6 +19,8 @@
 #include<errno.h>
 #include<sys/types.h>
 #include<sys/socket.h>
+#include<sys/wait.h>
+#include<sys/time.h>
 #include<netinet/in.h>
 #include<unistd.h>
 #include<thread>
@@ -43,13 +45,14 @@ public:
     static int Init();
 
     static void Start();
+    static void Handler(int sock, struct sockaddr_in addr);
+    static void deal_with_C0(unsigned char* data, size_t dlen, int sock);
+    static void deal_with_C1(unsigned char* data, size_t dlen, int sock);
+    static void deal_with_C2(unsigned char* data, size_t dlen, int sock);
+    static void deal_with_C3(unsigned char* data, size_t dlen, int sock);
+    static void deal_with_C4(unsigned char* data, size_t dlen, int sock);
+    static void deal_with_C5(unsigned char* data, size_t dlen, int sock);
 
-    static void deal_with_C0(unsigned char data[], size_t dlen, int sock);
-    static void deal_with_C1(unsigned char data[], size_t dlen, int sock);
-    static void deal_with_C2(unsigned char data[], size_t dlen, int sock);
-    static void deal_with_C3(unsigned char data[], size_t dlen, int sock);
-    static void deal_with_C4(unsigned char data[], size_t dlen, int sock);
-    static void deal_with_C5(unsigned char data[], size_t dlen, int sock);
 
     static void Wait();
     static void Notify();
