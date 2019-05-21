@@ -23,8 +23,10 @@ Message::~Message(){
 }
 
 int Message::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, unsigned char** msg, size_t* mlen){
-
-    unsigned char* msg_ = (unsigned char* )malloc(dlen + 10);
+    if (data == NULL) {
+        return COMMON_INVALID_PARAMS;
+    }
+    unsigned char *msg_ = (unsigned char *)malloc(dlen + 10);
     if (!msg_) {
         printf("MessageEncode: malloc msg fail\n");
         return COMMON_ERROR;
@@ -58,6 +60,10 @@ int Message::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, 
 }
 
 int Message::MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cmd, unsigned char** data, size_t* dlen){
+    if (buffer == NULL) {
+        return COMMON_INVALID_PARAMS;
+    }
+
     unsigned char head[2] = {0xff,0xff};
     if (memcmp(buffer, head, 2) != 0) {
         printf("MessageDecode verify msg head fail\n");
@@ -86,6 +92,10 @@ int Message::MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cm
 }
 
 int Message::SendMsg(int sock, void* msg, size_t mlen){
+    if (msg == NULL || sock < 0) {
+        return COMMON_INVALID_PARAMS;
+    }
+
     if(send(sock, msg, mlen, 0) == -1){
         printf("SendMsg fail\n");
         return COMMON_ERROR;
@@ -99,6 +109,10 @@ int Message::SendMsg(int sock, void* msg, size_t mlen){
 }
 
 unsigned char Message::CalculateBCC(unsigned char* buff, int len){
+    if (buff == NULL) {
+        return 0x00;
+    }
+
     unsigned char bcc= *buff;
     for(int i=1; i<len; i++){
         bcc^=*(buff+i);

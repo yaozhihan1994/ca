@@ -40,7 +40,7 @@ CertMng::~CertMng(){
 
 int CertMng::CertificateToFile(const char* filename, Certificate_t *crt){
     if (!filename || !crt) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -97,7 +97,7 @@ Certificate_t* CertMng::FileToCertificate(const char* filename){
 
 int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
     if (!crt) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
     asn_enc_rval_t er = uper_encode(&asn_DEF_Certificate, crt, CertOp::uper_callback, NULL);
     if(er.encoded == -1) {
@@ -127,7 +127,7 @@ int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certifica
 
 int CertMng::get_sign_der_buffer(Certificate_t* crt, unsigned char** buffer, size_t* blen){
     if (!crt) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }    
     asn_enc_rval_t ec;
     asn_enc_rval_t er;
@@ -246,7 +246,7 @@ Certificate_t* CertMng::BufferToCertificate(unsigned char* buffer, size_t blen){
 int CertMng::CertificateSign(EC_KEY* key, Certificate_t* crt){
 
     if (!key || !crt) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -285,7 +285,7 @@ int CertMng::CertificateSign(EC_KEY* key, Certificate_t* crt){
 int CertMng::CertificateVerify(EC_KEY* key, Certificate_t* crt){
     
     if (!key || !crt) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -324,6 +324,9 @@ int CertMng::CertificateVerify(EC_KEY* key, Certificate_t* crt){
 
 Certificate_t* CertMng::CreateCertificate(int ctype, int  stype, 
                                                                                        unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key){
+    if (!public_key || !sign_crt_hashid8 || !sign_key) {
+        return NULL;
+    }
     int ret = COMMON_ERROR;
     Certificate_t* crt = 0;
     std::string subject_name = SUBJECT_INFO_NAME;
@@ -374,17 +377,6 @@ Certificate_t* CertMng::CreateCertificate(int ctype, int  stype,
     crt->validityRestrictions.choice.timeStartAndEnd.endValidity = CertOp::get_difftime_by_years(CA_CRT_VALIDITY_PERIOD_YEARS);
 
     crt->version = CERTIFICATE_VERSION;
-
-//  if(COMMON_SUCCESS != CertMng::CertificateToBuffer(&buffer, &blen, crt)){
-//      printf("CreateCertificate CertificateToBuffer fail\n");
-//      goto err;
-//  }
-//
-//  if(COMMON_SUCCESS != CertOp::SignData(sign_key, crt->subjectInfo.subjectName.buf, buffer, blen, &sig, &slen)){
-//      printf("CreateCertificate SignData fail\n");
-//      goto err;
-//  }
-//  memcpy(crt->signature.choice.signature.buf, sig, SIGNATURE_LENGTH);
 
     if(COMMON_SUCCESS != CertMng::CertificateSign(sign_key, crt)){
         printf("CreateCertificate CertificateSign fail\n");

@@ -50,10 +50,8 @@ EC_KEY* CertOp::CreateSm2KeyPair(){
 }
 
 int CertOp::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** sig, size_t* sig_len){
-
-
     if (!key || !msg) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -116,17 +114,12 @@ int CertOp::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsi
 }
 
 int CertOp::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_len, const unsigned char* msg, int msg_len){
-
     if (!key || !sig || !msg) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
     ECDSA_SIG *ecdsa_sig = NULL;
-//  ecdsa_sig = d2i_ECDSA_SIG(NULL, &sig, sig_len);
-//  if (!ecdsa_sig) {
-//      printf("VerifySignedData: d2i_ECDSA_SIG fail\n");
-//      goto err;
-//  }
+
     unsigned char cr[32];
     memcpy(cr, sig, 32);
     unsigned char cs[32];
@@ -174,9 +167,8 @@ int CertOp::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_l
 }
 
 int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** ciphertext, size_t* ciphertext_len){
-
     if (!key || !msg) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -210,9 +202,8 @@ int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, u
 }
 
 int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t ciphertext_len, unsigned char** plaintext, size_t* plaintext_len){
-
     if (!key || !ciphertext) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -246,9 +237,8 @@ int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t cip
 }
 
 int CertOp::Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, size_t* hash_len){
-
     if (!msg) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -296,7 +286,7 @@ int CertOp::EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, 
                                              unsigned char *iv, unsigned char **ciphertext, int* ciphertext_len){
 
     if (!plaintext || !key || !iv) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -378,7 +368,7 @@ int CertOp::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext,
                                               unsigned char* iv, unsigned char** plaintext, int* plaintext_len){
 
     if (!ciphertext || !key) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -458,7 +448,7 @@ int CertOp::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext,
 
 int CertOp::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* keylen){
     if (!mkey || !okey) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -535,7 +525,6 @@ int CertOp::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* k
     return ret;
 }
 
-//pub key need free
 unsigned char* CertOp::get_sm2_public_key(const EC_KEY* key){
     if (!key) {
         return NULL;
@@ -672,7 +661,7 @@ unsigned long CertOp::get_time_by_diff(unsigned long diff){
 
 int CertOp::FileToBuffer(const char* filename, unsigned char** buff, size_t* blen){
     if (!filename) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     FILE* fp = fopen(filename, "r");
@@ -692,6 +681,9 @@ int CertOp::FileToBuffer(const char* filename, unsigned char** buff, size_t* ble
 }
 
 int CertOp::BufferToFile(const char* filename, unsigned char* buff, size_t blen){
+    if (!filename) {
+        return COMMON_INVALID_PARAMS;
+    }
     FILE* fp = fopen(filename, "w+");
     if (!fp) {
         printf("BufferToFile: Cannot open file: %s\n", filename);
@@ -706,7 +698,9 @@ int CertOp::BufferToFile(const char* filename, unsigned char* buff, size_t blen)
 
 //pri+pub
 int CertOp::KeyToFile(const char* filename, EC_KEY* key){
-
+    if (!filename || !key) {
+        return COMMON_INVALID_PARAMS;
+    }
     int ret = COMMON_ERROR;
     unsigned char* pub = NULL;
     unsigned char* pri = NULL;
@@ -827,6 +821,9 @@ EC_KEY* CertOp::FileToKey(const char* filename){
 }
 
 bool CertOp::VerifyDeviceSerialNumber(char* serial_number, size_t slen){
+    if (!serial_number) {
+        return COMMON_INVALID_PARAMS;
+    }
     if (!serial_number || slen <DEVICE_ID_LENGTH ) {
         printf("VerifyDeviceSerialNumber: INVALID_PARAMS Failed!\n");
         return COMMON_INVALID_PARAMS;
@@ -855,6 +852,9 @@ std::string CertOp::UnsignedLongToString(unsigned long t){
 
 
 unsigned int CertOp::UnsignedCharToInt(unsigned char* num){
+    if (!num) {
+        return 0;
+    }
     int ret = num[3];
     ret += num[2] << 8;
     ret += num[1] << 16;

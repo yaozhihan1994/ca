@@ -35,7 +35,7 @@ CRLMng::~CRLMng(){
 int CRLMng::CrlToFile(const char* filename, Crl_t *crl){
 
     if (!filename || !crl) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
@@ -62,7 +62,7 @@ int CRLMng::CrlToFile(const char* filename, Crl_t *crl){
 }
 
 Crl_t* CRLMng::FileToCrl(const char* filename){
-  if (!filename) {
+    if (!filename) {
         return NULL;
     }
 
@@ -91,7 +91,7 @@ Crl_t* CRLMng::FileToCrl(const char* filename){
 
 int CRLMng::CrlToBuffer(unsigned char** buffer, size_t* blen, Crl_t *crl){
     if (!crl) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     asn_enc_rval_t er = uper_encode(&asn_DEF_Crl, crl, CertOp::uper_callback, NULL);
@@ -136,9 +136,8 @@ Crl_t* CRLMng::BufferToCrl(unsigned char* buffer, size_t blen){
 }
 
 int CRLMng::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs){
-
     if (!tbs) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
     asn_enc_rval_t er = uper_encode(&asn_DEF_ToBeSignedCrl, tbs, CertOp::uper_callback, NULL);
     if(er.encoded == -1) {
@@ -168,6 +167,10 @@ int CRLMng::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSign
 }
 
 Crl_t* CRLMng::CreateCRL(bool is_first, unsigned char* hashid10, unsigned long crl_start_difftime){
+    if (!hashid10) {
+        return NULL;
+    }
+
     int ret = COMMON_ERROR;
     Crl_t *crl = NULL;
     crl = (Crl_t*)calloc(1, sizeof(Crl_t));
@@ -227,7 +230,7 @@ Crl_t* CRLMng::CreateCRL(bool is_first, unsigned char* hashid10, unsigned long c
 
 int CRLMng::CrlSign(EC_KEY* key, Crl_t* crl){
     if (!key || !crl) {
-        return COMMON_NULL_POINT;
+        return COMMON_INVALID_PARAMS;
     }
 
     int ret = COMMON_ERROR;
