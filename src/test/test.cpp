@@ -79,7 +79,11 @@ err:{
 
 }
 */
-unsigned char 
+unsigned int a = 255;
+unsigned char* b = IntToUnsignedChar(a);
+for(int i = 0; i< 4; i++){
+  printf("0x%02x ",*(b+i));
+}
 
 
 getchar();

@@ -2,7 +2,7 @@
 /***********************************************
 * @addtogroup Nebula
 * @{
-* @file  : Common.cpp
+* @file  : CertOp.cpp
 * @brief :
 * @date  : 2019-05-13
 ***********************************************/
@@ -11,7 +11,7 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#include "Common.h"
+#include "CertOp.h"
 
 s_CaInfo g_rootca;
 s_CaInfo g_subrootca;
@@ -20,19 +20,19 @@ s_CaInfo g_pca;
 s_CaInfo g_rca;
 s_CaInfo g_cca;
 
-Common::Common(){
+CertOp::CertOp(){
 }
 
-Common::~Common(){
+CertOp::~CertOp(){
 }
 
 
-int Common::uper_callback(const void *buffer, size_t size, void *key){
+int CertOp::uper_callback(const void *buffer, size_t size, void *key){
     return 0;
 }
 
 
-EC_KEY* Common::CreateSm2KeyPair(){
+EC_KEY* CertOp::CreateSm2KeyPair(){
     EC_KEY *key = NULL;
     key = EC_KEY_new_by_curve_name(NID_sm2);
     if (!key) {
@@ -49,7 +49,7 @@ EC_KEY* Common::CreateSm2KeyPair(){
     return key;
 }
 
-int Common::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** sig, size_t* sig_len){
+int CertOp::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** sig, size_t* sig_len){
 
 
     if (!key || !msg) {
@@ -115,7 +115,7 @@ int Common::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsi
     return ret;
 }
 
-int Common::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_len, const unsigned char* msg, int msg_len){
+int CertOp::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_len, const unsigned char* msg, int msg_len){
 
     if (!key || !sig || !msg) {
         return COMMON_NULL_POINT;
@@ -173,7 +173,7 @@ int Common::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_l
     return ret;
 }
 
-int Common::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** ciphertext, size_t* ciphertext_len){
+int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** ciphertext, size_t* ciphertext_len){
 
     if (!key || !msg) {
         return COMMON_NULL_POINT;
@@ -209,7 +209,7 @@ int Common::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, u
     return ret;
 }
 
-int Common::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t ciphertext_len, unsigned char** plaintext, size_t* plaintext_len){
+int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t ciphertext_len, unsigned char** plaintext, size_t* plaintext_len){
 
     if (!key || !ciphertext) {
         return COMMON_NULL_POINT;
@@ -245,7 +245,7 @@ int Common::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t cip
     return ret;
 }
 
-int Common::Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, size_t* hash_len){
+int CertOp::Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, size_t* hash_len){
 
     if (!msg) {
         return COMMON_NULL_POINT;
@@ -292,7 +292,7 @@ int Common::Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, si
     return ret;
 }
 
-int Common::EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, int plaintext_len, unsigned char *key,
+int CertOp::EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, int plaintext_len, unsigned char *key,
                                              unsigned char *iv, unsigned char **ciphertext, int* ciphertext_len){
 
     if (!plaintext || !key || !iv) {
@@ -374,7 +374,7 @@ int Common::EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, 
     return ret;
 }
 
-int Common::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext, int ciphertext_len, unsigned char* key, 
+int CertOp::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext, int ciphertext_len, unsigned char* key, 
                                               unsigned char* iv, unsigned char** plaintext, int* plaintext_len){
 
     if (!ciphertext || !key) {
@@ -456,7 +456,7 @@ int Common::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext,
     return ret;
 }
 
-int Common::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* keylen){
+int CertOp::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* keylen){
     if (!mkey || !okey) {
         return COMMON_NULL_POINT;
     }
@@ -536,7 +536,7 @@ int Common::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* k
 }
 
 //pub key need free
-unsigned char* Common::get_sm2_public_key(const EC_KEY* key){
+unsigned char* CertOp::get_sm2_public_key(const EC_KEY* key){
     if (!key) {
         return NULL;
     }
@@ -608,7 +608,7 @@ unsigned char* Common::get_sm2_public_key(const EC_KEY* key){
     return pub;
 }
 
-unsigned char* Common::get_sm2_private_key(const EC_KEY* key){
+unsigned char* CertOp::get_sm2_private_key(const EC_KEY* key){
     if (!key) {
         return NULL;
     }
@@ -632,11 +632,11 @@ unsigned char* Common::get_sm2_private_key(const EC_KEY* key){
     return pri;
 }
 
-unsigned long Common::get_difftime_by_now(){
+unsigned long CertOp::get_difftime_by_now(){
     return (unsigned long)(time(0) - DIFFTIME_2004);
 }
 
-unsigned long Common::get_difftime_by_days(int days){
+unsigned long CertOp::get_difftime_by_days(int days){
     struct tm* time_day = NULL;
     time_t mt_now = time(0);
     time_t mt_day;
@@ -646,7 +646,7 @@ unsigned long Common::get_difftime_by_days(int days){
     return (unsigned long)(mt_day - DIFFTIME_2004);
 }
 
-unsigned long Common::get_difftime_by_years(int years){
+unsigned long CertOp::get_difftime_by_years(int years){
     struct tm* time_year = NULL;
     time_t mt_now = time(0);
     time_t mt_year;
@@ -656,21 +656,21 @@ unsigned long Common::get_difftime_by_years(int years){
     return (unsigned long)(mt_year - DIFFTIME_2004);
 }
 
-unsigned long Common::get_time_now(){
+unsigned long CertOp::get_time_now(){
     return (unsigned long)time(0);
 }
 
-int Common::get_hour_now(){
+int CertOp::get_hour_now(){
     time_t t = get_time_now();
     struct tm *tm = localtime(&t);
     return tm->tm_hour;
 }
 
-unsigned long Common::get_time_by_diff(unsigned long diff){
+unsigned long CertOp::get_time_by_diff(unsigned long diff){
     return diff + DIFFTIME_2004;
 }
 
-int Common::FileToBuffer(const char* filename, unsigned char** buff, size_t* blen){
+int CertOp::FileToBuffer(const char* filename, unsigned char** buff, size_t* blen){
     if (!filename) {
         return COMMON_NULL_POINT;
     }
@@ -691,7 +691,7 @@ int Common::FileToBuffer(const char* filename, unsigned char** buff, size_t* ble
     return COMMON_SUCCESS;
 }
 
-int Common::BufferToFile(const char* filename, unsigned char* buff, size_t blen){
+int CertOp::BufferToFile(const char* filename, unsigned char* buff, size_t blen){
     FILE* fp = fopen(filename, "w+");
     if (!fp) {
         printf("BufferToFile: Cannot open file: %s\n", filename);
@@ -705,20 +705,20 @@ int Common::BufferToFile(const char* filename, unsigned char* buff, size_t blen)
 }
 
 //pri+pub
-int Common::KeyToFile(const char* filename, EC_KEY* key){
+int CertOp::KeyToFile(const char* filename, EC_KEY* key){
 
     int ret = COMMON_ERROR;
     unsigned char* pub = NULL;
     unsigned char* pri = NULL;
     unsigned char* buff_key = NULL;
     size_t buff_key_length = 32+64;
-    pub = Common::get_sm2_public_key(key);
+    pub = CertOp::get_sm2_public_key(key);
     if (!pub) {
         printf("KeyToFile get_sm2_public_key fail\n");
         goto err;
     }
 
-    pri = Common::get_sm2_private_key(key);
+    pri = CertOp::get_sm2_private_key(key);
     if (!pri) {
         printf("KeyToFile get_sm2_private_key fail\n");
         goto err;
@@ -732,7 +732,7 @@ int Common::KeyToFile(const char* filename, EC_KEY* key){
     memcpy(buff_key, pri, 32);
     memcpy(buff_key +32, pub, 64);
 
-    if (Common::BufferToFile(filename, buff_key, buff_key_length) != COMMON_SUCCESS) {
+    if (CertOp::BufferToFile(filename, buff_key, buff_key_length) != COMMON_SUCCESS) {
         printf("KeyToFile BufferToFile fail\n");
         goto err;
     }
@@ -752,7 +752,7 @@ int Common::KeyToFile(const char* filename, EC_KEY* key){
     return ret;
 }
 
-EC_KEY* Common::FileToKey(const char* filename){
+EC_KEY* CertOp::FileToKey(const char* filename){
     if (!filename) {
         return NULL;
     }
@@ -766,7 +766,7 @@ EC_KEY* Common::FileToKey(const char* filename){
     EC_POINT* mpub = NULL;
     EC_KEY* key = NULL;
 
-    if(Common::FileToBuffer(filename, &buffer, &blen) != COMMON_SUCCESS){
+    if(CertOp::FileToBuffer(filename, &buffer, &blen) != COMMON_SUCCESS){
         printf("FileToKey FileToBuffer fail\n");
         if (buffer) {
             free(buffer);
@@ -781,7 +781,7 @@ EC_KEY* Common::FileToKey(const char* filename){
 
     free(buffer);
 
-    key = Common::CreateSm2KeyPair();
+    key = CertOp::CreateSm2KeyPair();
     if (!key) {
         printf("FileToKey: CreateSm2KeyPair fail\n");
         return NULL;
@@ -826,7 +826,7 @@ EC_KEY* Common::FileToKey(const char* filename){
     return key;
 }
 
-bool Common::VerifyDeviceSerialNumber(char* serial_number, size_t slen){
+bool CertOp::VerifyDeviceSerialNumber(char* serial_number, size_t slen){
     if (!serial_number || slen <DEVICE_ID_LENGTH ) {
         printf("VerifyDeviceSerialNumber: INVALID_PARAMS Failed!\n");
         return COMMON_INVALID_PARAMS;
@@ -847,14 +847,14 @@ bool Common::VerifyDeviceSerialNumber(char* serial_number, size_t slen){
     return COMMON_ERROR;
 }
 
-std::string Common::UnsignedLongToString(unsigned long t){
+std::string CertOp::UnsignedLongToString(unsigned long t){
     std::ostringstream oss;  
     oss<<t;            
     return oss.str();   
 }
 
 
-unsigned int Common::UnsignedCharToInt(unsigned char* num){
+unsigned int CertOp::UnsignedCharToInt(unsigned char* num){
     int ret = num[3];
     ret += num[2] << 8;
     ret += num[1] << 16;
@@ -862,7 +862,7 @@ unsigned int Common::UnsignedCharToInt(unsigned char* num){
     return ret;
 }
 
-unsigned char* Common::IntToUnsignedChar(unsigned int num){
+unsigned char* CertOp::IntToUnsignedChar(unsigned int num){
     unsigned char *ret = (unsigned char* )malloc(4);
     if (!ret) {
         printf("IntToUnsignedChar malloc fail\n");

@@ -29,23 +29,7 @@ int create_socket(){
     addr_.sin_family = AF_INET;
     addr_.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr_.sin_port = htons(6666); 
-/*
-    int enable = 1;
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,  &enable, sizeof(int)) == -1){
-        printf("CreateSocket: setsockopt() Failed!\n");
-        return -1;
-    }
 
-    if(bind(sock, (struct sockaddr *)&addr_, sizeof(struct sockaddr)) == -1){
-        printf("CreateSocket: bind() Failed!\n");
-        return -1;
-    }
-
-    if(listen(sock, 10) == -1){
-         printf("CreateSocket: listen socket error\n");
-         return 0;
-    }
-*/
     return 0;
 }
 
@@ -70,7 +54,7 @@ usleep(1);
 
 void Send(){
 
-	unsigned char test[10] = {0xff, 0xff, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x03, 0xff};
+	unsigned char test[10] = {0xff, 0xff, 0x00, 0x00, 0x00, 0x02, 0x05, 0x05, 0x02, 0xff};
 	size_t len = 10;
 while(true){
 	if(send(sock, test, len, 0) == -1){
@@ -106,3 +90,4 @@ int main(){
 	getchar();
 return 0;
 }
+

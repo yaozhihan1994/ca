@@ -2,7 +2,7 @@
 /***********************************************
 * @addtogroup Nebula
 * @{
-* @file  : CrlManage.h
+* @file  : CRLMng.h
 * @brief :
 * @date  : 2019-05-13
 ***********************************************/
@@ -11,8 +11,8 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#ifndef CRL_MANAGE_H_
-#define CRL_MANAGE_H_
+#ifndef CRL_MNG_H_
+#define CRL_MNG_H_
 
 #include <stdio.h>
 #include <iostream>
@@ -22,17 +22,17 @@
 #include <dirent.h>
 
 #include "asn/Crl.h"
-#include "Common.h"
+#include "CertOp.h"
 
 #define CRL_FILENAME "crls/"
 #define CRL_SERIAL_NUMBER "serial_number/crl_serial_number"
 #define CRL_VERSION 1
 #define CRL_MAX_LENGTH 111
 
-class CrlManage{
+class CRLMng{
 public:
-    CrlManage();
-    ~CrlManage();
+    CRLMng();
+    ~CRLMng();
 
     static int CrlToFile(const char* filename, Crl_t *crl);
     static Crl_t* FileToCrl(const char* filename);

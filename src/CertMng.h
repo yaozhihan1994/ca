@@ -1,7 +1,7 @@
 ﻿/***********************************************
 * @addtogroup Nebula
 * @{
-* @file  : CertificateManage.h
+* @file  : CertMng.h
 * @brief :
 * @date  : 2019-05-13
 ***********************************************/
@@ -10,8 +10,8 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#ifndef CERTIFICATE_H_
-#define CERTIFICATE_H_
+#ifndef CERT_MNG_H_
+#define CERT_MNG_H_
 
 #include <stdio.h>
 #include <iostream>
@@ -20,7 +20,7 @@
 #include <mutex>
 #include <dirent.h>
 
-#include "Common.h"
+#include "CertOp.h"
 
 #define PCRTS "pcrts/"
 #define RCRTS "rcrts/"
@@ -31,10 +31,10 @@
 #define CERTIFICATE_VERSION 2
 #define CERT_LENGTH 162
 
-class CertificateManage{
+class CertMng{
 public:
-    CertificateManage();
-    ~CertificateManage();
+    CertMng();
+    ~CertMng();
 
     static int CertificateToFile(const char* filename, Certificate_t *crt);
     static Certificate_t* FileToCertificate(const char* filename);

@@ -14,7 +14,7 @@
 #ifndef MESSAGE_H_
 #define MESSAGE_H_
 
-#include "Common.h"
+#include "CertOp.h"
 
 #define FAIL_CODE 0x01
 #define SUCC_CODE 0x00

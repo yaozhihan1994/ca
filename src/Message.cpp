@@ -11,7 +11,6 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#include "Common.h"
 #include "Message.h"
 
 unsigned char Message::message_send_succ_code_ = SUCC_CODE;
@@ -34,7 +33,7 @@ int Message::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, 
     memset(msg_+len, 0xff, 2);
     len+=2;
     unsigned int length = 2+dlen;
-    unsigned char* length_ = Common::IntToUnsignedChar(length);
+    unsigned char* length_ = CertOp::IntToUnsignedChar(length);
     if (!length_) {
         printf("MessageEncode: IntToUnsignedChar fail\n");
         return COMMON_ERROR;
@@ -70,7 +69,7 @@ int Message::MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cm
     }
     unsigned char length[4];
     memcpy(length, buffer+2, 4);
-    unsigned int length_ = Common::UnsignedCharToInt(length);
+    unsigned int length_ = CertOp::UnsignedCharToInt(length);
     *dlen = length_-1;
     unsigned char* data_ = (unsigned char*)malloc(*dlen);
     if (!data_) {
@@ -121,7 +120,7 @@ int Message::SendErrorCode(int sock, unsigned char cmd){
     }
     memset(msg+mlen, 0xff, 2);
     mlen+=2;
-    length = Common::IntToUnsignedChar(2);
+    length = CertOp::IntToUnsignedChar(2);
     if (!length) {
         printf("SendErrorCode: IntToUnsignedChar fail\n");
         return COMMON_ERROR;

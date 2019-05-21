@@ -1,7 +1,7 @@
 ﻿/***********************************************
 * @addtogroup Nebula
 * @{
-* @file  : Common.h
+* @file  : CertOp.h
 * @brief :
 * @date  : 2019-05-13
 ***********************************************/
@@ -10,8 +10,8 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#ifndef COMMON_H_
-#define COMMON_H_
+#ifndef CERT_OP_H_
+#define CERT_OP_H_
 
 #include <iostream>
 #include <fstream>
@@ -59,29 +59,21 @@
 #define CCACRT "crts/CCA.crt"
 #define CCAKEY "crts/CCA.key"
 
+#define COMMON_SUCCESS 0
+#define	COMMON_ERROR -1
+#define	COMMON_INVALID_PARAMS -2
+#define	COMMON_NULL_POINT -3
+
+#define ROOT_CA_CRT 0
+#define SUBROOT_CA_CRT 1
+#define E_CA_CRT 2
+#define P_CA_CRT 3
+#define R_CA_CRT 4
+#define C_CA_CRT 5
+#define P_CRT 6
+#define R_CRT 7
+
 #define SM2_USER_ID "1234567812345678"
-
-typedef enum CommonError
-{
-	COMMON_SUCCESS = 0,
-	COMMON_ERROR = -1,
-	COMMON_INVALID_PARAMS = -2,
-	COMMON_NULL_POINT = -3,
-
-} e_CommonError;
-
-typedef enum CertificateType
-{
-	ROOT_CA_CRT = 0,
-	SUBROOT_CA_CRT = 1,
-	E_CA_CRT = 2,
-	P_CA_CRT = 3,
-    R_CA_CRT = 4,
-    C_CA_CRT = 5,
-    P_CRT = 6,
-    R_CRT = 7,
-
-} e_CertificateType;
 
 typedef struct CaInfo{
     EC_KEY* key;
@@ -99,10 +91,10 @@ extern s_CaInfo g_pca;
 extern s_CaInfo g_rca;
 extern s_CaInfo g_cca;
 
-class Common{
+class CertOp{
 public:
-    Common();
-    ~Common();
+    CertOp();
+    ~CertOp();
 
     static int uper_callback(const void *buffer, size_t size, void *key);
 

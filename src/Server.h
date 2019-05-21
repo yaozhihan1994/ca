@@ -28,9 +28,9 @@
 #include<condition_variable>
 
 #include "Message.h"
-#include "CertificateManage.h"
-#include "CrlManage.h"
-#include "Common.h"
+#include "CertMng.h"
+#include "CRLMng.h"
+#include "CertOp.h"
 
 #define SERVER_PORT 6666
 #define SERVER_LISTEN_NUMBER 10
@@ -46,13 +46,13 @@ public:
 
     static void Start();
     static void Handler(int sock, struct sockaddr_in addr);
-    static void deal_with_C0(unsigned char* data, size_t dlen, int sock);
-    static void deal_with_C1(unsigned char* data, size_t dlen, int sock);
-    static void deal_with_C2(unsigned char* data, size_t dlen, int sock);
-    static void deal_with_C3(unsigned char* data, size_t dlen, int sock);
-    static void deal_with_C4(unsigned char* data, size_t dlen, int sock);
-    static void deal_with_C5(unsigned char* data, size_t dlen, int sock);
-    static void deal_with_C6(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C0(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C1(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C2(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C3(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C4(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C5(unsigned char* data, size_t dlen, int sock);
+    static int deal_with_C6(unsigned char* data, size_t dlen, int sock);
 
     static void Wait();
     static void Notify();

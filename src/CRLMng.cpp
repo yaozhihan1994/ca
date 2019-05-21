@@ -2,7 +2,7 @@
 /***********************************************
 * @addtogroup Nebula
 * @{
-* @file  : CrlManage.cpp
+* @file  : CRLMng.cpp
 * @brief :
 * @date  : 2019-05-13
 ***********************************************/
@@ -11,7 +11,7 @@
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-#include "CrlManage.h"
+#include "CRLMng.h"
 
 extern s_CaInfo g_rootca;
 extern s_CaInfo g_subrootca;
@@ -20,13 +20,19 @@ extern s_CaInfo g_pca;
 extern s_CaInfo g_rca;
 extern s_CaInfo g_cca;
 
-std::thread CrlManage::crl_manage_thread_;
-std::list<std::string> CrlManage::crl_list_;
-std::mutex CrlManage::crl_mutex_;
-std::mutex CrlManage::crl_serial_mutex_;
-unsigned long CrlManage::crl_serial_number_ = 0;
+std::thread CRLMng::crl_manage_thread_;
+std::list<std::string> CRLMng::crl_list_;
+std::mutex CRLMng::crl_mutex_;
+std::mutex CRLMng::crl_serial_mutex_;
+unsigned long CRLMng::crl_serial_number_ = 0;
 
-int CrlManage::CrlToFile(const char* filename, Crl_t *crl){
+CRLMng::CRLMng(){
+}
+
+CRLMng::~CRLMng(){
+}
+
+int CRLMng::CrlToFile(const char* filename, Crl_t *crl){
 
     if (!filename || !crl) {
         return COMMON_NULL_POINT;
@@ -35,12 +41,12 @@ int CrlManage::CrlToFile(const char* filename, Crl_t *crl){
     int ret = COMMON_ERROR;
     unsigned char* buffer = NULL;
     size_t blen = 0;
-    if (COMMON_SUCCESS != CrlManage::CrlToBuffer(&buffer, &blen, crl)) {
+    if (COMMON_SUCCESS != CRLMng::CrlToBuffer(&buffer, &blen, crl)) {
         printf("CrlToFile: CrlToBuffer fail\n");
         goto err;
     }
 
-    if (COMMON_SUCCESS != Common::BufferToFile(filename, buffer, blen)) {
+    if (COMMON_SUCCESS != CertOp::BufferToFile(filename, buffer, blen)) {
         printf("CrlToFile: BufferToFile fail\n");
         goto err;
     }
@@ -55,7 +61,7 @@ int CrlManage::CrlToFile(const char* filename, Crl_t *crl){
 
 }
 
-Crl_t* CrlManage::FileToCrl(const char* filename){
+Crl_t* CRLMng::FileToCrl(const char* filename){
   if (!filename) {
         return NULL;
     }
@@ -83,12 +89,12 @@ Crl_t* CrlManage::FileToCrl(const char* filename){
     return crl;
 }
 
-int CrlManage::CrlToBuffer(unsigned char** buffer, size_t* blen, Crl_t *crl){
+int CRLMng::CrlToBuffer(unsigned char** buffer, size_t* blen, Crl_t *crl){
     if (!crl) {
         return COMMON_NULL_POINT;
     }
 
-    asn_enc_rval_t er = uper_encode(&asn_DEF_Crl, crl, Common::uper_callback, NULL);
+    asn_enc_rval_t er = uper_encode(&asn_DEF_Crl, crl, CertOp::uper_callback, NULL);
     if(er.encoded == -1) {
         fprintf(stderr, "CrlToBuffer: uper_encode Cannot encode %s\n", er.failed_type->name);
         return COMMON_ERROR;
@@ -115,7 +121,7 @@ int CrlManage::CrlToBuffer(unsigned char** buffer, size_t* blen, Crl_t *crl){
     }
 }
 
-Crl_t* CrlManage::BufferToCrl(unsigned char* buffer, size_t blen){
+Crl_t* CRLMng::BufferToCrl(unsigned char* buffer, size_t blen){
     if (!buffer) {
         return NULL;
     }
@@ -129,12 +135,12 @@ Crl_t* CrlManage::BufferToCrl(unsigned char* buffer, size_t blen){
     return crl;
 }
 
-int CrlManage::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs){
+int CRLMng::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs){
 
     if (!tbs) {
         return COMMON_NULL_POINT;
     }
-    asn_enc_rval_t er = uper_encode(&asn_DEF_ToBeSignedCrl, tbs, Common::uper_callback, NULL);
+    asn_enc_rval_t er = uper_encode(&asn_DEF_ToBeSignedCrl, tbs, CertOp::uper_callback, NULL);
     if(er.encoded == -1) {
         fprintf(stderr, "CrlToBuffer: uper_encode Cannot encode %s\n", er.failed_type->name);
         return COMMON_ERROR;
@@ -161,7 +167,7 @@ int CrlManage::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeS
     }
 }
 
-Crl_t* CrlManage::CreateCRL(bool is_first, unsigned char* hashid10, unsigned long crl_start_difftime){
+Crl_t* CRLMng::CreateCRL(bool is_first, unsigned char* hashid10, unsigned long crl_start_difftime){
     int ret = COMMON_ERROR;
     Crl_t *crl = NULL;
     crl = (Crl_t*)calloc(1, sizeof(Crl_t));
@@ -190,8 +196,8 @@ Crl_t* CrlManage::CreateCRL(bool is_first, unsigned char* hashid10, unsigned lon
         crl->unsignedCrl.crlSerial = ++crl_serial_number_;
     }
     crl->unsignedCrl.startPeriod = crl_start_difftime;
-    crl->unsignedCrl.issueDate = Common::get_difftime_by_now();
-    crl->unsignedCrl.nextCrl = Common::get_difftime_by_now();
+    crl->unsignedCrl.issueDate = CertOp::get_difftime_by_now();
+    crl->unsignedCrl.nextCrl = CertOp::get_difftime_by_now();
 
     crl->unsignedCrl.type.present = CrlType_PR_idOnly;
     crl->unsignedCrl.type.choice.idOnly.buf =  (uint8_t* )malloc(UNSIGNED_CRL_HASHID_LENGTH);
@@ -219,7 +225,7 @@ Crl_t* CrlManage::CreateCRL(bool is_first, unsigned char* hashid10, unsigned lon
     return crl;
 }
 
-int CrlManage::CrlSign(EC_KEY* key, Crl_t* crl){
+int CRLMng::CrlSign(EC_KEY* key, Crl_t* crl){
     if (!key || !crl) {
         return COMMON_NULL_POINT;
     }
@@ -297,33 +303,33 @@ int CrlManage::CrlSign(EC_KEY* key, Crl_t* crl){
     return ret;
 }
 
-int CrlManage::CrlVerify(EC_KEY* key, Crl_t* crl){
+int CRLMng::CrlVerify(EC_KEY* key, Crl_t* crl){
     //no need for now
     return 0;
 }
 
 
-int CrlManage::Init(){
-    if (CrlManage::init_crl_list() != COMMON_SUCCESS) {
+int CRLMng::Init(){
+    if (CRLMng::init_crl_list() != COMMON_SUCCESS) {
         printf("Init: init_crl_list fail\n");
         return COMMON_ERROR;
     }
     return COMMON_SUCCESS;
 }
 
-void CrlManage::Start(){
-    crl_manage_thread_ = std::thread(CrlManage::crl_manage);
+void CRLMng::Start(){
+    crl_manage_thread_ = std::thread(CRLMng::crl_manage);
     crl_manage_thread_.detach();
 }
 
-void CrlManage::crl_manage(){
+void CRLMng::crl_manage(){
     printf("crl_manage thread start\n");
     while (true) {
-        if (Common::get_hour_now() == 2) {
+        if (CertOp::get_hour_now() == 2) {
             crl_mutex_.lock();
             for (std::list<std::string>::iterator i = crl_list_.begin(); i != crl_list_.end(); ){
                 std::string name(*i);
-                if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < Common::get_time_now()){
+                if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < CertOp::get_time_now()){
                     crl_list_.erase(i++);
                     name = CRL_FILENAME + name;
                     remove(name.c_str());
@@ -339,7 +345,7 @@ void CrlManage::crl_manage(){
     printf("crl_manage thread dead\n");
 }
 
-int CrlManage::init_crl_list(){
+int CRLMng::init_crl_list(){
     printf("CrlManage init_crl_list start\n");
     DIR* dir = opendir(CRL_FILENAME);
     dirent* p = NULL;
@@ -360,7 +366,7 @@ int CrlManage::init_crl_list(){
         Crl_t* crl = NULL;
         unsigned char hashid10[10];
         memset(hashid10, 0x00, 10);
-        crl = CrlManage::CreateCRL(true, hashid10, Common::get_difftime_by_now());
+        crl = CRLMng::CreateCRL(true, hashid10, CertOp::get_difftime_by_now());
         if (!crl) {
             printf("init_crl_list: Create first crl fail\n");
             return COMMON_ERROR;
@@ -368,11 +374,11 @@ int CrlManage::init_crl_list(){
         //xer_fprint(stdout, &asn_DEF_Crl, crl);
         std::string file_name(CRL_FILENAME);
         std::string list_name;
-        list_name = Common::UnsignedLongToString(Common::get_time_by_diff(Common::get_difftime_by_years(CA_CRT_VALIDITY_PERIOD_YEARS))) 
-                         +"_" + Common::UnsignedLongToString(crl->unsignedCrl.crlSerial);
+        list_name = CertOp::UnsignedLongToString(CertOp::get_time_by_diff(CertOp::get_difftime_by_years(CA_CRT_VALIDITY_PERIOD_YEARS))) 
+                         +"_" + CertOp::UnsignedLongToString(crl->unsignedCrl.crlSerial);
 
         file_name += list_name;
-        if (CrlManage::CrlToFile(file_name.c_str(), crl) != COMMON_SUCCESS) {
+        if (CRLMng::CrlToFile(file_name.c_str(), crl) != COMMON_SUCCESS) {
             printf("init_crl_list: CrlToFile fail\n");
             ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Crl, crl);
             return COMMON_ERROR;
@@ -383,13 +389,13 @@ int CrlManage::init_crl_list(){
     return COMMON_SUCCESS;
 }
 
-void CrlManage::set_crl_list(std::string name){
+void CRLMng::set_crl_list(std::string name){
     crl_mutex_.lock();
     crl_list_.push_back(name);
     crl_mutex_.unlock();
 }
 
-int CrlManage::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
+int CRLMng::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
     std::string name;
     int num = 0;
     int len = 0;
@@ -409,8 +415,8 @@ int CrlManage::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
         crl_end_time = strtoul(name.substr(0, name.find_first_of("_")).c_str(), NULL ,10);
         name = CRL_FILENAME + name;
 
-        if (crl_end_time > Common::get_time_now()) {
-            if (Common::FileToBuffer(name.c_str(), &crl_buffer, &crl_buffer_size) != COMMON_SUCCESS) {
+        if (crl_end_time > CertOp::get_time_now()) {
+            if (CertOp::FileToBuffer(name.c_str(), &crl_buffer, &crl_buffer_size) != COMMON_SUCCESS) {
                 printf("get_crls: FileToBuffer fail\n");
                 free(buff);
                 return COMMON_ERROR;
@@ -428,7 +434,7 @@ int CrlManage::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
     return COMMON_SUCCESS;
 }
 
-unsigned long CrlManage::get_crl_serial_number(){
+unsigned long CRLMng::get_crl_serial_number(){
     unsigned long sn = 0;
     std::fstream fs;
     fs.open(CRL_SERIAL_NUMBER, std::ios::in);
@@ -445,7 +451,7 @@ unsigned long CrlManage::get_crl_serial_number(){
     return sn;
 }
 
-int CrlManage::set_crl_serial_number(unsigned long sn){
+int CRLMng::set_crl_serial_number(unsigned long sn){
     std::lock_guard<std::mutex> lck(crl_serial_mutex_);
     std::fstream fs;
     fs.open(CRL_SERIAL_NUMBER, std::ios::out);
