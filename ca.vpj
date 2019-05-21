@@ -199,16 +199,16 @@
         <Folder
             Name="Source Files"
             Filters="*.c;*.C;*.cc;*.cpp;*.cp;*.cxx;*.c++;*.prg;*.pas;*.dpr;*.asm;*.s;*.bas;*.java;*.cs;*.sc;*.e;*.cob;*.html;*.rc;*.tcl;*.py;*.pl;*.d;*.m;*.mm;*.go">
-            <F N="src_new/CertificateManage.cpp"/>
-            <F N="src_new/CertificateManage.h"/>
-            <F N="src_new/Common.cpp"/>
-            <F N="src_new/Common.h"/>
-            <F N="src_new/CrlManage.cpp"/>
-            <F N="src_new/CrlManage.h"/>
-            <F N="src_new/Message.cpp"/>
-            <F N="src_new/Message.h"/>
-            <F N="src_new/Server.cpp"/>
-            <F N="src_new/Server.h"/>
+            <F N="src/CertificateManage.cpp"/>
+            <F N="src/CertificateManage.h"/>
+            <F N="src/Common.cpp"/>
+            <F N="src/Common.h"/>
+            <F N="src/CrlManage.cpp"/>
+            <F N="src/CrlManage.h"/>
+            <F N="src/Message.cpp"/>
+            <F N="src/Message.h"/>
+            <F N="src/Server.cpp"/>
+            <F N="src/Server.h"/>
         </Folder>
         <Folder
             Name="Header Files"

@@ -1,26 +1,29 @@
-/***********************************************
+﻿/***********************************************
 * @addtogroup Nebula
 * @{
 * @file  : Common.h
 * @brief :
-* @date  : 2019-04-25
+* @date  : 2019-05-13
 ***********************************************/
 
 //--------------------------------------------------
 // Copyright (c) Beijing Nebula Link Technology Co.,Ltd
 //--------------------------------------------------
 
-
 #ifndef COMMON_H_
 #define COMMON_H_
+
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <cstring>
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
-#include <time.h>
+#include <unistd.h>
+
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/sm2.h>
@@ -29,271 +32,137 @@
 #include <openssl/ecdsa.h>
 #include <openssl/err.h>
 
-#include "CommonError.h"
-#include "CertificateAndCrl.h"
 #include "asn/Certificate.h"
-#include "asn/Crl.h"
-#include "Init.h"
 
+#define DIFFTIME_2004 1075564800
+#define CA_CRT_VALIDITY_PERIOD_YEARS 10 
+#define DEVICE_CRT_VALIDITY_PERIOD_DAYS 7
+#define SIGNATURE_LENGTH 64
+#define PUBLIC_KEY_LENGTH 64
+#define PRIVATE_KEY_LENGTH 32
 #define SM3_HASH_LENGTH 32
-#define SM2_PUBLIC_KEY_LENGTH 65
-#define SM2_PRIVATE_KEY_LENGTH 32
-#define SM2_SIGN_MAX_LENGTH 72
+#define CERTIFICATE_DGST_WITH_SM3_LENGTH 8
+#define UNSIGNED_CRL_HASHID_LENGTH 10
+#define DEVICE_ID_LENGTH 10
 
-#define CERTIFICATE_VERSION 2
-#define CRL_VERSION 1
+#define DEVICE_SERIAL_NUMBER "serial_number/device_serial_number"
+#define ROOTCACRT "crts/rootCA.crt"
+#define ROOTCAKEY "crts/rootCA.key"
+#define SUBROOTCACRT "crts/SubrootCA.crt"
+#define SUBROOTCAKEY "crts/SubrootCA.key"
+#define ECACRT "crts/ECA.crt"
+#define ECAKEY "crts/ECA.key"
+#define PCACRT "crts/PCA.crt"
+#define PCAKEY "crts/PCA.key"
+#define RCACRT "crts/RCA.crt"
+#define RCAKEY "crts/RCA.key"
+#define CCACRT "crts/CCA.crt"
+#define CCAKEY "crts/CCA.key"
 
-/**
- * @brief Create Sm2 Key Pair
- * 
- * @author yzh (4/19/2019)
- * @param  void
- * 
- * @return EC_KEY* -- succ,  NULL -- fail
- */ 
-EC_KEY* CreateSm2KeyPair();
+#define SM2_USER_ID "1234567812345678"
 
+typedef enum CommonError
+{
+	COMMON_SUCCESS = 0,
+	COMMON_ERROR = -1,
+	COMMON_INVALID_PARAMS = -2,
+	COMMON_NULL_POINT = -3,
 
-/**
- * @brief SM2 signature operation. Computes Z (user id digest) 
- *        and then signs H(Z || msg) using SM2
- * sm2 sign use same msg , id and key will get different sig 
- * because every time sm2 do sign , it use different random 
- * number k.  
- *  
- * @note sig_len = 70 - 72 
- *  
- * @author yzh (4/19/2019)
- * 
- * @param key (in) : sm2 key
- * @param id (in) : sm3 hash step 1: do hash to id , get Z
- * @param msg (in) : sm3 hash step 2: do hash to Z || msg 
- * @param msg_len (in) : the length of msg
- * @param sig (out) : signature
- * @param sig_len (out) :  the length of signature
- * 
- * @return int 0 -- succ, other -- fail 
- *  */ 
-int SignData(EC_KEY* key, const char* id,  const unsigned char* msg, size_t msg_len, unsigned char** sig, size_t* sig_len);
+} e_CommonError;
 
+typedef enum CertificateType
+{
+	ROOT_CA_CRT = 0,
+	SUBROOT_CA_CRT = 1,
+	E_CA_CRT = 2,
+	P_CA_CRT = 3,
+    R_CA_CRT = 4,
+    C_CA_CRT = 5,
+    P_CRT = 6,
+    R_CRT = 7,
 
-/**
- * @brief Verify sm2 Signature
- * 
- * @author yzh (4/19/2019)
- * 
- * @param key (in) : sm2 key
- * @param sig (in) : signature
- * @param sig_len (in) : the length of signature
- * @param id (in) : sm3 hash step 1: do hash to id , get Z
- * @param msg (in) : sm3 hash step 2: do hash to Z || msg
- * @param msg_len (in) : the length of msg
- * 
- * @return  int 0 -- succ, other -- fail 
- */
-int VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_len, const char* id, const unsigned char* msg, int msg_len);
+} e_CertificateType;
 
+typedef struct CaInfo{
+    EC_KEY* key;
+    Certificate_t* crt;
+    unsigned char* buffer;
+    unsigned int blen;
+    unsigned char* hashid8;
 
-/**
- * @brief Encrypt data by sm2 public key , sm3 do hash 
- * sm2 encrypto use same plaintext and key will get different 
- * cpihertext because every time sm2 do encrypto , it use 
- * different random number k. 
- *  
- * @note ciphertext_len = msg_len + (106...108)
- *  
- * @author yzh (4/19/2019)
- * 
- * @param key (in) : sm2 key
- * @param msg (in) : msg that needs to be Encrypted 
- * @param msg_len (in) : the length of msg
- * @param ciphertext (out) : Message encryption result
- * @param ciphertext_len (out) : the length of Message 
- *                       encryption result
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning  *ciphertext need be free when you do not need it
- */
-int EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** ciphertext, size_t* ciphertext_len);
+} s_CaInfo;
 
+extern s_CaInfo g_rootca;
+extern s_CaInfo g_subrootca;
+extern s_CaInfo g_eca;
+extern s_CaInfo g_pca;
+extern s_CaInfo g_rca;
+extern s_CaInfo g_cca;
 
-/**
- * @brief Decrypt data by sm2 private key , sm3 do hash
- * 
- * @author yzh (4/19/2019)
- * 
- * @param key (in) : sm2 key
- * @param ciphertext (in) : ciphertext that needs to be 
- *                   decrypted
- * @param ciphertext_len (in) : the length of ciphertext
- * @param plaintext (out) : Ciphertext decryption result
- * @param plaintext_len (out) : the length of ciphertext 
- *                      decryption result
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning  *plaintext need be free when you do not need it 
- */
-int DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t ciphertext_len, unsigned char** plaintext, size_t* plaintext_len);
+class Common{
+public:
+    Common();
+    ~Common();
 
+    static int uper_callback(const void *buffer, size_t size, void *key);
 
+    static EC_KEY* CreateSm2KeyPair();
 
-/**
- * @brief do Hash to messages by SM3, hash length is 32.
- * 
- * @author yzh (4/19/2019)
- * 
- * @param msg(in) : Need to do hash message
- * @param msg_len(in) : Need to do hash message length
- * @param hash(out) : hash result
- * @param hash_len(out) : hash result length
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning *hash need be free when you do not need it   
- */
-int Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, size_t* hash_len);
+    static int SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** sig, size_t* sig_len);
 
+    static int VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_len, const unsigned char* msg, int msg_len);
 
-/**
- * @brief sm4 cbc mode, same input same output .
- * cbc block = 128bit(16Bit)  ciphertext_len max = msg_len + 16.
- * @author yzh (4/20/2019)
- * 
- * @param plaintext 
- * @param plaintext_len 
- * @param key 
- * @param iv 
- * @param ciphertext 
- * @param ciphertext_len 
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning  *ciphertext need be free when you do not need it  
- */
-int EncryptDataBySm4Cbc(unsigned char *plaintext, int plaintext_len, unsigned char *key,
-                        unsigned char *iv, unsigned char **ciphertext, int* ciphertext_len);
+    static int EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** ciphertext, size_t* ciphertext_len);
 
+    static int DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t ciphertext_len, unsigned char** plaintext, size_t* plaintext_len);
 
-/**
- * @brief sm4 ecb mode, same input same output .
- * ecb block = 128bit(16Bit)  ciphertext_len max = msg_len + 16.
- * @author yzh (4/20/2019)
- * 
- * @param plaintext 
- * @param plaintext_len 
- * @param key 
- * @param ciphertext 
- * @param ciphertext_len 
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning  *ciphertext need be free when you do not need it  
- */
-int EncryptDataBySm4Ecb(unsigned char *plaintext, int plaintext_len, unsigned char *key,
-                        unsigned char **ciphertext, int* ciphertext_len);
+    //need free
+    static int Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, size_t* hash_len);
 
+    static int EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, int plaintext_len, unsigned char *key,
+                                                           unsigned char *iv, unsigned char **ciphertext, int* ciphertext_len);
+    static int DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext, int ciphertext_len, unsigned char* key, 
+                                                           unsigned char* iv, unsigned char** plaintext, int* plaintext_len);
+    static int DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* keylen);
 
-/**
- * 
- * 
- * @author yzh (4/20/2019)
- * 
- * @param ciphertext 
- * @param ciphertext_len 
- * @param key 
- * @param iv 
- * @param plaintext 
- * @param plaintext_len 
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning  *ciphertext need be free when you do not need it 
- */
-int DecryptDataBySm4Cbc(unsigned char *ciphertext, int ciphertext_len, unsigned char* key, 
-                       unsigned char* iv, unsigned char** plaintext, int* plaintext_len);
+    //need free
+    static unsigned char* get_sm2_public_key(const EC_KEY* key);
+    static unsigned char* get_sm2_private_key(const EC_KEY* key);
 
+    static unsigned long get_difftime_by_now();
 
-/**
- * 
- * 
- * @author yzh (4/20/2019)
- * 
- * @param ciphertext 
- * @param ciphertext_len 
- * @param key 
- * @param plaintext 
- * @param plaintext_len 
- * 
- * @return  int 0 -- succ, other -- fail  
- * @warning  *ciphertext need be free when you do not need it 
- */
-int DecryptDataBySm4Ecb(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, 
-                        unsigned char** plaintext, int* plaintext_len);
+    static unsigned long get_difftime_by_days(int days);
 
-/**
- * @brief use my ec key and other pub key(ec key) to compute a 
- *        key ,  length = 32, same input same output
- * @author yzh (4/25/2019) 
- *  
- * @param mkey (in) : my ec key 
- * @param okey (in) : other ec key 
- * @param key (out) : key 
- * @param keylen (out) : key length 
- * @return  int 0 -- succ, other -- fail 
- *  
- * @warning key need be free when you do not use it 
- */
-int DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* keylen);
+    static unsigned long get_difftime_by_years(int years);
 
-/**
- * 
- * 
- * @author yzh (4/25/2019)
- * 
- * @param key 
- * 
- * @return unsigned char* -- succ  NULL -- fail
- */
-unsigned char* get_sm2_public_key(const EC_KEY* key);
+    static unsigned long get_time_now();
 
+    static int get_hour_now();
 
-/**
- * 
- * 
- * @author yzh (4/25/2019)
- * 
- * @param key 
- * 
- * @return unsigned char* -- succ  NULL -- fail
- */
-unsigned char* get_sm2_private_key(const EC_KEY* key);
+    static unsigned long get_time_by_diff(unsigned long diff);
 
-unsigned long get_diff_time_by_now();
+    //need free
+    static int FileToBuffer(const char* filename, unsigned char** buff, size_t* blen);
 
-unsigned long get_diff_time_by_days(int day);
+    static int BufferToFile(const char* filename, unsigned char* buff, size_t blen);
 
-unsigned long get_diff_time_by_years(int year);
+    static int KeyToFile(const char* filename, EC_KEY* key);
 
-unsigned long get_time_now();
+    static EC_KEY* FileToKey(const char* filename);
 
-unsigned long get_time_by_diff(unsigned long diff);
+    static bool VerifyDeviceSerialNumber(char* serial_number, size_t slen);
 
-int CertificateSign(EC_KEY* key, Certificate_t* crt);
+    static std::string UnsignedLongToString(unsigned long t);
 
-int CertificateVerify(EC_KEY* key, Certificate_t* crt);
+    static unsigned int UnsignedCharToInt(unsigned char* num);
 
-int CrlSign(EC_KEY* key, Crl_t* crl);
+    static unsigned char* IntToUnsignedChar(unsigned int num);
 
-int KeyToFile(const char* filename, EC_KEY* key);
-
-EC_KEY* FileToKey(const char* filename);
-
-int FileToBuffer(const char* filename, unsigned char** buff, size_t* blen);
-
-int CreateCRL(EC_KEY* key, unsigned char* subrootca_hash, unsigned char* cca_hash, unsigned char* hashid10, 
-              unsigned long crl_serial_number, unsigned long crt_start_time,  unsigned long* sign_time);
+};
 
 #endif
 
 /**
 * @}
 **/
-
-
 
