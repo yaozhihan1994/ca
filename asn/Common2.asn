@@ -1,0 +1,252 @@
+Common
+DEFINITIONS
+AUTOMATIC TAGS ::=
+BEGIN
+
+EXPORTS Uint3, Uint8, Uint16, Uint32, IValue, CrlSeries, Opaque, SequenceOfOctetString, SequenceOfUint3, SequenceOfUint8, SequenceOfUint16, PublicKeyAlgorithm, SymmetricAlgorithm, PublicKey, EncryptKey, HashedId8, HashedId10, Time32, Duration, GeographicRegion, SequenceOfRectangularRegion, CircularRegion, RectangularRegion, PolygonalRegion, TwoDLocation, Latitude, NinetyDegreeInt, KnownLatitude, UnknownLatitude, Longitude, OneEightyDegreeInt, KnownLongitude, UnknownLongitude, Certificate, SignerInfo, SequenceOfCertificate, CertificateDigestWithOtherAlgorithm, SubjectInfo, SubjectType, SubjectAttribute, SubjectAssurance, SequenceOfitsAidList, SequenceOfitsAidSspList, ItsAid, ItsAidSsp, ValidityRestriction, SequenceOfTimeStartAndEnd, SequenceOfTimestartAndDuration, Signature, Crl, ToBeSignedCrl, CrlType, IdAndDate;
+
+Uint3 ::= INTEGER (0..7) 
+
+Uint8 ::= INTEGER (0..255) 
+
+Uint16 ::= INTEGER (0..65535) 
+
+Uint32 ::= INTEGER (0..4294967295) 
+
+--Uint64 ::= INTEGER (0..18446744073709551615) --
+
+IValue ::= Uint16
+
+CrlSeries ::= Uint16
+
+Opaque ::= OCTET STRING
+
+SequenceOfOctetString ::= SEQUENCE (SIZE (0..MAX)) OF OCTET STRING (SIZE(0..MAX))
+
+SequenceOfUint3 ::= SEQUENCE OF Uint3
+
+SequenceOfUint8 ::= SEQUENCE OF Uint8
+
+SequenceOfUint16 ::= SEQUENCE OF Uint16
+
+--公钥加密算法 PublicKeyAlgorithm--
+PublicKeyAlgorithm::= ENUMERATED {
+sgdsm3sm2 (2),
+sgdsm2 (3),
+...
+}
+
+--对称加密算法 SymmetricAlgorithm--
+SymmetricAlgorithm::= ENUMERATED {
+sgdsm4ecb (1),
+sgdsm4cbc (2),
+sgdsm4cfb (3),
+sgdsm4ofb (4),
+...
+}
+
+--公钥 PublicKey--
+PublicKey::= CHOICE{
+signKey OCTET STRING(SIZE(64)),
+encKey EncryptKey,
+...
+}
+
+EncryptKey ::= SEQUENCE{
+supportedSymmAlg SymmetricAlgorithm,
+signKey OCTET STRING(SIZE(64))
+}
+
+
+--8字节哈希值 HashedId8--
+HashedId8 ::= OCTET STRING (SIZE(8))
+
+--10字节哈希值 HashedId10--
+HashedId10 ::= OCTET STRING (SIZE(10))
+
+--32位时间 Time32--
+Time32 ::= Uint32
+
+
+--区间 Duration--
+Duration ::= Uint16
+
+
+--地理有效区域 GeographicRegion--
+GeographicRegion ::= CHOICE {
+circularRegion CircularRegion,
+rectangularRegion SequenceOfRectangularRegion,
+polygonalRegion PolygonalRegion,
+...
+}
+
+SequenceOfRectangularRegion ::= SEQUENCE OF RectangularRegion
+
+--圆形区域 CircularRegion--
+CircularRegion ::=SEQUENCE {
+center TwoDLocation,
+radius Uint16
+}
+
+--矩形区域 RectangularRegion--
+RectangularRegion ::=SEQUENCE {
+northWest TwoDLocation,
+southEast TwoDLocation
+}
+
+--多边形区域 PolygonalRegion--
+PolygonalRegion ::= SEQUENCE SIZE(3..MAX) OF TwoDLocation
+
+--2D位置 TwoDLocation--
+TwoDLocation ::=SEQUENCE {
+latitude Latitude,
+longitude Longitude
+}
+
+--维度 Latitude--
+Latitude ::= NinetyDegreeInt
+
+NinetyDegreeInt ::= INTEGER {
+min (-900000000),
+max (900000000),
+unknown (900000001)
+} (-900000000..900000001)
+
+KnownLatitude ::= NinetyDegreeInt (min..max)
+
+UnknownLatitude ::= NinetyDegreeInt (unknown)
+
+
+--经度 Longitude--
+Longitude ::= OneEightyDegreeInt
+
+OneEightyDegreeInt ::= INTEGER {
+min (-1799999999),
+max (1800000000),
+unknown (1800000001)
+} (-1799999999..1800000001)
+
+KnownLongitude ::= OneEightyDegreeInt (min..max)
+
+UnknownLongitude ::= OneEightyDegreeInt (unknown)
+
+--证书 Certificate--
+Certificate ::= SEQUENCE {
+version Uint8,
+signerInfo SignerInfo,
+subjectInfo SubjectInfo,
+subjectAttributes SubjectAttribute,
+validityRestrictions ValidityRestriction,
+signature Signature
+}
+
+--签名者信息 SignerInfo--
+SignerInfo ::= CHOICE {
+self NULL,
+certificateDigestWithSM3 HashedId8,
+certificate Certificate,
+certificateChain SequenceOfCertificate,
+certificateDigestWithOtherAlgorithm CertificateDigestWithOtherAlgorithm,
+...
+}
+
+SequenceOfCertificate ::= SEQUENCE OF Certificate
+
+CertificateDigestWithOtherAlgorithm ::= SEQUENCE {
+algorithm PublicKeyAlgorithm,
+digest HashedId8
+}
+
+--主体信息subjectinfo--
+SubjectInfo ::= SEQUENCE {
+subjectType SubjectType,
+subjectName OCTET STRING (SIZE(0..32))
+}
+
+SubjectType::= ENUMERATED {
+enrollmentCredential (0), --注册证书--
+authorizationTicket (1), --授权证书--
+authorizationAuthority (2), --授权机构--
+enrollmentAuthority (3), --注册机构--
+rootCa (4), --根认证机构--
+crlSigner (5) --CRL签发者--
+}
+
+--主体属性 SubjectAttribute--
+SubjectAttribute ::= SEQUENCE{
+verificationKey PublicKey OPTIONAL,
+encryptionKey PublicKey OPTIONAL,
+assuranceLevel SubjectAssurance OPTIONAL,
+itsAidList SequenceOfitsAidList OPTIONAL,
+itsAidSspList SequenceOfitsAidSspList OPTIONAL,
+...
+}
+
+SubjectAssurance ::= OCTET STRING(SIZE(1))
+
+SequenceOfitsAidList ::= SEQUENCE OF ItsAid
+
+SequenceOfitsAidSspList ::= SEQUENCE OF ItsAidSsp
+
+--itsAid：符合IntX类型的一般智能交通应用列表。--
+ItsAid ::= Uint32
+
+--itsAidSsp：符合ItsAidSsp结构的规定服务权限的智能交通应用列表。--
+ItsAidSsp::= SEQUENCE {
+itsAid ItsAid,
+serviceSpecificPermissions OCTET STRING(SIZE(1..32))
+}
+
+ValidityRestriction ::= CHOICE {  
+timeEnd                   Time32,
+timeStartAndEnd           SequenceOfTimeStartAndEnd,
+timestartAndDuration      SequenceOfTimestartAndDuration,
+region                    GeographicRegion,
+...
+}
+
+SequenceOfTimeStartAndEnd ::= SEQUENCE { 
+startValidity     Time32,
+endValidity       Time32
+}
+
+SequenceOfTimestartAndDuration ::= SEQUENCE { 
+startValidity     Time32,
+duration          Duration
+}
+
+Signature ::=CHOICE{
+signature OCTET STRING (SIZE(64)),
+...
+}
+
+Crl ::= SEQUENCE{
+version Uint32,
+signerInfo SignerInfo,
+unsignedCrl ToBeSignedCrl,
+signature Signature
+}
+
+ToBeSignedCrl ::=SEQUENCE{
+type CrlType,
+caId HashedId8,
+crlSerial Uint32,
+startPeriod Time32,
+issueDate Time32,
+nextCrl Time32
+}
+
+
+CrlType ::=CHOICE {
+idOnly HashedId10,
+idAndExpiry IdAndDate,
+...
+}
+
+IdAndDate ::=SEQUENCE{
+id HashedId10,
+expiry Time32
+}
+
+END
+
