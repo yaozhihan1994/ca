@@ -120,10 +120,8 @@ unsigned char Message::CalculateBCC(unsigned char* buff, int len){
     return bcc;
 }
 
-
-int Message::SendErrorCode(int sock, unsigned char cmd){
+int Message::SendErrorOrSuccCode(int sock, unsigned char cmd, unsigned char code){
     int ret = COMMON_ERROR;
-    unsigned char data = FAIL_CODE;
     unsigned char* msg = NULL;
     size_t mlen = 0;
     unsigned char* length = NULL;
@@ -143,7 +141,7 @@ int Message::SendErrorCode(int sock, unsigned char cmd){
     mlen+=4;
     memset(msg+mlen, cmd, 1);
     mlen+=1;
-    memset(msg+mlen, FAIL_CODE, 1);
+    memset(msg+mlen, code, 1);
     mlen+=1;
     memset(msg+mlen, Message::CalculateBCC(msg+2, 6), 1);
     mlen+=1;

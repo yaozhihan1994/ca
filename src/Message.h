@@ -32,7 +32,7 @@ public:
 
     static unsigned char CalculateBCC(unsigned char* buff, int len);
 
-    static int SendErrorCode(int sock, unsigned char cmd);
+    static int SendErrorOrSuccCode(int sock, unsigned char cmd, unsigned char code);
 
 private:
     static unsigned char message_send_succ_code_;

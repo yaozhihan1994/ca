@@ -43,7 +43,7 @@
 #define SM3_HASH_LENGTH 32
 #define CERTIFICATE_DGST_WITH_SM3_LENGTH 8
 #define UNSIGNED_CRL_HASHID_LENGTH 10
-#define DEVICE_ID_LENGTH 10
+#define DEVICE_ID_LENGTH 8
 
 #define DEVICE_SERIAL_NUMBER "serial_number/device_serial_number"
 #define ROOTCACRT "crts/rootCA.crt"
