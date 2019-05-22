@@ -15,8 +15,6 @@
 #include <thread>
 #include <mutex>
 #include <list>
-#include <map>
-#include <array>
 using namespace std;
 /*
 class test{
@@ -81,16 +79,13 @@ err:{
 
 }
 */
-array<unsigned char, 11> arr {};
-memset(arr.data(), 0x31, 10);
-
-map<string, array<unsigned char, 11>> m;
-m.insert(pair<string, array<unsigned char, 11>>("haha",arr));
-cout<<(m.find("haha")->second).data()<<endl;
-cout<<arr.data()<<endl;
-    for (map<string, array<unsigned char, 11>>::iterator i = m.begin(); i != m.end(); ){
-		m.erase(i++);
+unsigned int a = 255;
+unsigned char* b = IntToUnsignedChar(a);
+for(int i = 0; i< 4; i++){
+  printf("0x%02x ",*(b+i));
 }
+
+
 getchar();
 return 0;
 }
