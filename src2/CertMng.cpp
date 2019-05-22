@@ -324,9 +324,6 @@ int CertMng::CertificateVerify(EC_KEY* key, Certificate_t* crt){
 
 Certificate_t* CertMng::CreateCertificate(int ctype, int  stype, 
                                                                                        unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key){
-    if (!public_key || !sign_crt_hashid8 || !sign_key) {
-        return NULL;
-    }
     int ret = COMMON_ERROR;
     Certificate_t* crt = 0;
     std::string subject_name = SUBJECT_INFO_NAME;
