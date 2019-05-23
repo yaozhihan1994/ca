@@ -174,11 +174,6 @@ int Server::create_ca(){
 int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_hashid8, EC_KEY* sign_key,
                               std::string key_filename, std::string crt_filename, s_CaInfo* ca){
 
-    if (NULL == ca || NULL == sign_key) {
-        printf("create_ca_to_file: COMMON_INVALID_PARAMS\n");
-        return COMMON_INVALID_PARAMS;
-    }
-
     int ret = COMMON_ERROR;
     EC_KEY* key = NULL;
     Certificate_t* crt = NULL;
@@ -336,6 +331,7 @@ void Server::Handler(int sock, struct sockaddr_in addr){
             printf("Handler: dlen = 0\n");
             continue ;
         }
+        //maybe use thead , but if recv too many msg it will have many thread 
         switch (cmd) {
             case 0x00:{
                 result = Server::deal_with_C0(data, dlen, sock);
@@ -394,57 +390,58 @@ int Server::deal_with_C0(unsigned char* data, size_t dlen, int sock){
     }
     unsigned char cmd = 0x00;
     int ret = COMMON_ERROR; 
-    int type = (int)(*data);
+    unsigned char type = (*data);
     int flag = 0;
     unsigned  char* msg = NULL;
     size_t mlen = 0;
+    unsigned char buffer[CERT_LENGTH+1];
+    size_t blen = CERT_LENGTH+1;
+    memset(buffer, type, 1);
     switch (type) {
-        case 1:{
+        case 0x01:{
             //send eca crt
-            if((ret = Message::MessageEncode(cmd, g_eca.buffer, g_eca.blen, &msg, &mlen)) != COMMON_SUCCESS){
-                printf("deal_with_C0: MessageEncode fail\n");
-                break;
-            }
-            if((ret = Message::SendMsg(sock, msg, mlen)) != COMMON_SUCCESS){
-                printf("deal_with_C0: SendMsg fail\n");
-                free(msg);
-                break;
-            }
+            printf("deal_with_C0: send eca crt\n");
+            memcpy(buffer+1, g_eca.buffer, g_eca.blen);
             break;
         }
-        case 2:{
-            //send pca crt
-            if((ret = Message::MessageEncode(cmd, g_pca.buffer, g_pca.blen, &msg, &mlen)) != COMMON_SUCCESS){
-                printf("deal_with_C0: MessageEncode fail\n");
-                break;
-            }
-            if((ret = Message::SendMsg(sock, msg, mlen)) != COMMON_SUCCESS){
-                printf("deal_with_C0: SendMsg fail\n");
-                free(msg);
-                break;
-            }
+        case 0x02:{
+            //send pca crt      
+            printf("deal_with_C0: send pca crt\n");
+            memcpy(buffer+1, g_pca.buffer, g_pca.blen);
             break;
         }
-        case 3:{
+        case 0x03:{
             //send rca crt
-            if((ret = Message::MessageEncode(cmd, g_rca.buffer, g_rca.blen, &msg, &mlen)) != COMMON_SUCCESS){
-                printf("deal_with_C0: MessageEncode fail\n");
-                break;
-            }
-            if((ret = Message::SendMsg(sock, msg, mlen)) != COMMON_SUCCESS){
-                printf("deal_with_C0: SendMsg fail\n");
-                free(msg);
-                break;
-            }
+            printf("deal_with_C0: send rca crt\n");
+            memcpy(buffer+1, g_rca.buffer, g_rca.blen);
+            break;
+        }
+        case 0x04:{
+            //send cca crt
+            printf("deal_with_C0: send cca crt\n");
+            memcpy(buffer+1, g_cca.buffer, g_cca.blen);
             break;
         }
         default:{
-            printf("Handler: unknow request ca crt type\n");
+            printf("deal_with_C0: unknow request ca crt type\n");
             break;
         }
     }
-    if (msg) {
-        free(msg);
+
+    if((ret = Message::MessageEncode(cmd, buffer, blen, &msg, &mlen)) != COMMON_SUCCESS){
+        printf("deal_with_C0: MessageEncode fail\n");
+        goto err;
+    }
+    if((ret = Message::SendMsg(sock, msg, mlen)) != COMMON_SUCCESS){
+        printf("deal_with_C0: SendMsg fail\n");
+        goto err;
+    }
+
+    ret = COMMON_SUCCESS;
+    err:{
+        if (msg) {
+            free(msg);
+        }
     }
     std::cout<<"thread deal_with_C0 end"<<std::endl;
     return ret;
@@ -471,7 +468,7 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
     size_t blen = 0;
 
     if (CertOp::VerifyDeviceSerialNumber((char* )data, dlen) != COMMON_SUCCESS) {
-        printf("deal_with_C1: VerifyDeviceId fail\n");
+        printf("deal_with_C1: VerifyDeviceSerialNumber fail\n");
         goto err;
     }
     key = CertOp::CreateSm2KeyPair();
@@ -542,10 +539,11 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
 
 int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C2 start"<<std::endl;
-    if (NULL == data || 0 > sock) {
+    if (NULL == data || 0 > sock || dlen < CERT_LENGTH) {
         printf("deal_with_C2: COMMON_INVALID_PARAMS\n");
         return COMMON_INVALID_PARAMS;
     }
+
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x02;
     int flag = 0;
@@ -617,7 +615,7 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
 
 int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C3 start"<<std::endl;
-    if (NULL == data || 0 > sock) {
+    if (NULL == data || 0 > sock || dlen < CERT_LENGTH) {
         printf("deal_with_C3: COMMON_INVALID_PARAMS\n");
         return COMMON_INVALID_PARAMS;
     }
@@ -690,7 +688,7 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
 
 int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C4 start"<<std::endl;
-    if (NULL == data || 0 > sock) {
+    if (NULL == data || 0 > sock || dlen < CERT_LENGTH*2 +1) {
         printf("deal_with_C4: COMMON_INVALID_PARAMS\n");
         return COMMON_INVALID_PARAMS;
     }
@@ -698,10 +696,6 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     unsigned char cmd = 0x04;
     unsigned char error_crt_type = *data;
     size_t error_crt_size = CERT_LENGTH;
-    if (dlen  < error_crt_size + CERT_LENGTH + 1) {
-        printf("deal_with_C4: error data\n");
-        return COMMON_ERROR;
-    }
     unsigned char error_crt_buffer[error_crt_size];
     memcpy(error_crt_buffer, data + 1, error_crt_size);
     size_t ecrt_size = CERT_LENGTH;
@@ -763,7 +757,6 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     error_crt_end_gmtime = CertOp::get_time_by_diff(error_crt->validityRestrictions.choice.timeStartAndEnd.endValidity);
     error_crt_start_difftime = error_crt->validityRestrictions.choice.timeStartAndEnd.startValidity;
 
-    error_crt_end_gmtime = CertOp::get_time_now();
     if ((crl = CRLMng::CreateCRL(false, error_crt_hash+32-10, error_crt_start_difftime)) == NULL) {
         printf("deal_with_C4: CreateCRL fail\n");
         goto err;
@@ -771,7 +764,8 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
 
     name = CertOp::UnsignedLongToString(error_crt_end_gmtime);
     name = name + "_" + CertOp::UnsignedLongToString(crl->unsignedCrl.crlSerial);
-    CRLMng::set_crl_list(name);
+
+    CRLMng::set_crl_map(name, error_crt_hash+32-10);
     name =  CRL_FILENAME+name;
 
     if (CRLMng::CrlToFile(name.c_str(), crl) != COMMON_SUCCESS) {
@@ -779,11 +773,11 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
         goto err;
     }
 
-    printf("deal_with_C4: SendErrorOrSuccCode 0x00\n");
     if (Message::SendErrorOrSuccCode(sock, cmd, 0x00) != COMMON_SUCCESS) {
         printf("deal_with_C4: SendErrorOrSuccCode fail\n");
         goto err;
     }
+    printf("deal_with_C4: report error crt succ\n");
 
     ret = COMMON_SUCCESS;
     err:{
@@ -806,7 +800,7 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
 
 int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C5 start"<<std::endl;
-    if (NULL == data || 0 > sock) {
+    if (NULL == data || 0 > sock || dlen < CERT_LENGTH) {
         printf("deal_with_C5: COMMON_INVALID_PARAMS\n");
         return COMMON_INVALID_PARAMS;
     }
@@ -841,6 +835,8 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
         printf("deal_with_C5: get_crls fail\n");
         goto err;
     }
+
+//  CertOp::print_buffer(crls_buffer, crls_blen);
 
     package = (crls_num%10 == 0)? (int)(crls_num/10) : (int)(crls_num/10)+1;
     package_sum = package;
@@ -905,75 +901,80 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
 
 int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
     std::cout<<"thread deal_with_C6 start"<<std::endl;
-    if (NULL == data || 0 > sock) {
+    if (NULL == data || 0 > sock || dlen < CERT_LENGTH*2 +1) {
         printf("deal_with_C6: COMMON_INVALID_PARAMS\n");
         return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
     unsigned char cmd = 0x06;
-//  unsigned char error_crt_type = *data;
-//  size_t error_crt_size = CERT_LENGTH;
-//  if (dlen  < error_crt_size + CERT_LENGTH + 1) {
-//      printf("deal_with_C4: error data\n");
-//      return COMMON_ERROR;
-//  }
-//  unsigned char error_crt_buffer[error_crt_size];
-//  memcpy(error_crt_buffer, data + 1, error_crt_size);
-//  size_t ecrt_size = CERT_LENGTH;
-//  unsigned char ecrt_buffer[ecrt_size];
-//  memcpy(ecrt_buffer, data+error_crt_size+1, ecrt_size);
+    unsigned char error_crt_type = *data;
+    size_t error_crt_size = CERT_LENGTH;
+    unsigned char error_crt_buffer[error_crt_size];
+    memcpy(error_crt_buffer, data + 1, error_crt_size);
+    size_t ecrt_size = CERT_LENGTH;
+    unsigned char ecrt_buffer[ecrt_size];
+    memcpy(ecrt_buffer, data+error_crt_size+1, ecrt_size);
     Certificate_t* error_crt = NULL;
     Certificate_t* ecrt = NULL;
     EC_KEY* error_crt_verify_key = NULL;
     unsigned char* error_crt_hash = NULL;
     size_t error_crt_hash_size = 0;
     std::string name;
+    unsigned char check_result = 0xff;
 
-//  if((ecrt = CertMng::BufferToCertificate(ecrt_buffer, ecrt_size)) == NULL){
-//      printf("deal_with_C6: BufferToCertificate fail\n");
-//      goto err;
-//  }
-//  if (CertMng::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
-//      printf("deal_with_C6: CertificateVerify fail\n");
-//      goto err;
-//  }
-//
-//  if((error_crt = CertMng::BufferToCertificate(error_crt_buffer, error_crt_size)) == NULL){
-//      printf("deal_with_C6: BufferToCertificate fail\n");
-//      goto err;
-//  }
-//
-//  switch (error_crt_type) {
-//      case 0x02:{
-//          error_crt_verify_key = g_pca.key;
-//          break;
-//      }
-//      case 0x03:{
-//          error_crt_verify_key = g_rca.key;
-//          break;
-//      }
-//      default:{
-//          printf("deal_with_C6: unknow error_crt_type\n");
-//          break;
-//      }
-//  }
-//  if (error_crt_verify_key == NULL) {
-//      printf("deal_with_C6: error_crt_verify_key NULL\n");
-//      goto err;
-//  }
-//
-//  if (CertMng::CertificateVerify(error_crt_verify_key, error_crt) != COMMON_SUCCESS) {
-//      printf("deal_with_C6: CertificateVerify fail\n");
-//      goto err;
-//  }
-//
-//  if(CertOp::Sm3Hash(error_crt_buffer, error_crt_size, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
-//      printf("deal_with_C6: Sm3Hash fail\n");
-//      goto err;
-//  }
+    if((ecrt = CertMng::BufferToCertificate(ecrt_buffer, ecrt_size)) == NULL){
+        printf("deal_with_C6: BufferToCertificate fail\n");
+        goto err;
+    }
+    if (CertMng::CertificateVerify(g_eca.key, ecrt) != COMMON_SUCCESS) {
+        printf("deal_with_C6: CertificateVerify fail\n");
+        goto err;
+    }
+
+    if((error_crt = CertMng::BufferToCertificate(error_crt_buffer, error_crt_size)) == NULL){
+        printf("deal_with_C6: BufferToCertificate fail\n");
+        goto err;
+    }
+
+    switch (error_crt_type) {
+        case 0x02:{
+            error_crt_verify_key = g_pca.key;
+            break;
+        }
+        case 0x03:{
+            error_crt_verify_key = g_rca.key;
+            break;
+        }
+        default:{
+            printf("deal_with_C6: unknow error_crt_type\n");
+            break;
+        }
+    }
+    if (error_crt_verify_key == NULL) {
+        printf("deal_with_C6: error_crt_verify_key NULL\n");
+        goto err;
+    }
+
+    if (CertMng::CertificateVerify(error_crt_verify_key, error_crt) != COMMON_SUCCESS) {
+        printf("deal_with_C6: CertificateVerify fail\n");
+        goto err;
+    }
+
+    if(CertOp::Sm3Hash(error_crt_buffer, error_crt_size, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
+        printf("deal_with_C6: Sm3Hash fail\n");
+        goto err;
+    }
 
 //  check if error crt is in crl list
+    if (CRLMng::check_reported_crl(error_crt_hash+32-10) == COMMON_SUCCESS) {
+        check_result = 0x00;
+        printf("deal_with_C6: reported crl exist\n");
+    }else{
+        check_result = 0x01;
+        printf("deal_with_C6: reported crl no exist\n");
+    }
 
+//messageencode + send
     if (Message::SendErrorOrSuccCode(sock, cmd, 0x00) != COMMON_SUCCESS) {
         printf("deal_with_C6: SendErrorOrSuccCode fail\n");
         goto err;

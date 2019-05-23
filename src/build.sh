@@ -1,1 +1,1 @@
-g++ -o server *.cpp -std=c++11 -fpermissive -lssl -lcrypto -lasn -lpthread -I . -I /home/yzh/CA/ca/include -I /home/yzh/CA/ca/include/asn -I /home/yzh/CA/ca/include/openssl -L /home/yzh/CA/ca/lib -Wl,-rpath=/home/yzh/CA/ca/lib
+$CXX -o server ../asn/*.c *.cpp -std=c++0x -fpermissive -lssl -lcrypto -lpthread -I . -I /home/yzh/ca/include -I /home/yzh/ca/include/asn -I /home/yzh/ca/include/openssl -L /home/yzh/ca/lib -Wl,-rpath=/home/yzh/ca/lib

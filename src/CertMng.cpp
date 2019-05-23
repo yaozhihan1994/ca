@@ -322,9 +322,9 @@ int CertMng::CertificateVerify(EC_KEY* key, Certificate_t* crt){
     return ret;
 }
 
-Certificate_t* CertMng::CreateCertificate(int ctype, int  stype, 
-                                                                                       unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key){
-    if (!public_key || !sign_crt_hashid8 || !sign_key) {
+Certificate_t* CertMng::CreateCertificate(int ctype, int  stype, unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key){
+    if (!public_key || !sign_key || (ctype != ROOT_CA_CRT && (!sign_crt_hashid8))) {
+        printf("CreateCertificate COMMON_INVALID_PARAMS\n");
         return NULL;
     }
     int ret = COMMON_ERROR;
@@ -374,7 +374,11 @@ Certificate_t* CertMng::CreateCertificate(int ctype, int  stype,
 
     crt->validityRestrictions.present = ValidityRestriction_PR_timeStartAndEnd;
     crt->validityRestrictions.choice.timeStartAndEnd.startValidity = CertOp::get_difftime_by_now();
-    crt->validityRestrictions.choice.timeStartAndEnd.endValidity = CertOp::get_difftime_by_years(CA_CRT_VALIDITY_PERIOD_YEARS);
+    if (stype == SubjectType_authorizationTicket) {
+        crt->validityRestrictions.choice.timeStartAndEnd.endValidity = CertOp::get_difftime_by_days(DEVICE_CRT_VALIDITY_PERIOD_DAYS);
+    }else{// root ca // othrer ca
+        crt->validityRestrictions.choice.timeStartAndEnd.endValidity = CertOp::get_difftime_by_years(CA_CRT_VALIDITY_PERIOD_YEARS);
+    }
 
     crt->version = CERTIFICATE_VERSION;
 
@@ -665,6 +669,9 @@ int CertMng::create_a_pcrt(){
         goto err;
     }
 
+//  CertOp::print_buffer(pri_key, 32);
+//  CertOp::print_buffer(pub_key, 64);
+
     if((pcrt = CertMng::CreateCertificate(P_CRT, SubjectType_authorizationTicket,
                                                     pub_key, g_pca.hashid8, g_pca.key)) == NULL){
         printf("create_a_pcrt: CreateCertificate pcrt fail\n");
@@ -752,6 +759,9 @@ int CertMng::create_a_rcrt(){
         printf("create_a_rcrt: get_sm2_public_key fail\n");
         goto err;
     }
+
+//  CertOp::print_buffer(pri_key, 32);
+//  CertOp::print_buffer(pub_key, 64);
 
     if((rcrt = CertMng::CreateCertificate(R_CRT, SubjectType_authorizationTicket,
                                                     pub_key, g_rca.hashid8, g_rca.key)) == NULL){

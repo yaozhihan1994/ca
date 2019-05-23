@@ -34,9 +34,6 @@ public:
 
     static int SendErrorOrSuccCode(int sock, unsigned char cmd, unsigned char code);
 
-private:
-    static unsigned char message_send_succ_code_;
-    static unsigned char message_send_fail_code_;
 };
 
 

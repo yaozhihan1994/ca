@@ -13,9 +13,6 @@
 
 #include "Message.h"
 
-unsigned char Message::message_send_succ_code_ = SUCC_CODE;
-unsigned char Message::message_send_fail_code_ = FAIL_CODE;
-
 Message::Message(){
 }
 
@@ -44,7 +41,7 @@ int Message::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, 
     len+=4;
     memset(msg_+len, cmd, 1);
     len+=1;
-    memset(msg_+len, Message::message_send_succ_code_, 1);
+    memset(msg_+len, SUCC_CODE, 1);
     len+=1;
     memcpy(msg_+len, data, dlen);
     len+=dlen;

@@ -622,27 +622,39 @@ unsigned char* CertOp::get_sm2_private_key(const EC_KEY* key){
 }
 
 unsigned long CertOp::get_difftime_by_now(){
-    return (unsigned long)(time(0) - DIFFTIME_2004);
+    return (unsigned long)(time(0) - get_difftime_2004());
+}
+
+unsigned long CertOp::get_difftime_2004(){
+    struct tm time_2004;
+    time_2004.tm_sec = 0;
+    time_2004.tm_min = 0;
+    time_2004.tm_hour = 0;
+    time_2004.tm_mday = 1;
+    time_2004.tm_mon = 0;
+    time_2004.tm_year = 104;
+    time_t time_diff = mktime(&time_2004);
+    return (unsigned long)(time_diff);
 }
 
 unsigned long CertOp::get_difftime_by_days(int days){
     struct tm* time_day = NULL;
     time_t mt_now = time(0);
     time_t mt_day;
-    time_day = gmtime(&mt_now);
+    time_day = localtime(&mt_now);
     time_day->tm_mday += days;
     mt_day = mktime(time_day);
-    return (unsigned long)(mt_day - DIFFTIME_2004);
+    return (unsigned long)(mt_day - get_difftime_2004());
 }
 
 unsigned long CertOp::get_difftime_by_years(int years){
     struct tm* time_year = NULL;
     time_t mt_now = time(0);
     time_t mt_year;
-    time_year = gmtime(&mt_now);
+    time_year = localtime(&mt_now);
     time_year->tm_year += years;
     mt_year = mktime(time_year);
-    return (unsigned long)(mt_year - DIFFTIME_2004);
+    return (unsigned long)(mt_year - get_difftime_2004());
 }
 
 unsigned long CertOp::get_time_now(){
@@ -656,7 +668,7 @@ int CertOp::get_hour_now(){
 }
 
 unsigned long CertOp::get_time_by_diff(unsigned long diff){
-    return diff + DIFFTIME_2004;
+    return diff + get_difftime_2004();
 }
 
 int CertOp::FileToBuffer(const char* filename, unsigned char** buff, size_t* blen){
@@ -875,6 +887,13 @@ unsigned char* CertOp::IntToUnsignedChar(unsigned int num){
     return ret;
 }
 
+void CertOp::print_buffer(unsigned char* buffer, size_t blen){
+    printf("\n");
+    for (int i=0; i<blen; i++) {
+        printf("0x%02x ", *(buffer+i));
+    }
+    printf("\n");
+}
 
 /**
 * @}

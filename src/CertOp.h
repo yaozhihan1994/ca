@@ -34,7 +34,6 @@
 
 #include "asn/Certificate.h"
 
-#define DIFFTIME_2004 1075564800
 #define CA_CRT_VALIDITY_PERIOD_YEARS 10 
 #define DEVICE_CRT_VALIDITY_PERIOD_DAYS 7
 #define SIGNATURE_LENGTH 64
@@ -122,7 +121,7 @@ public:
     static unsigned char* get_sm2_private_key(const EC_KEY* key);
 
     static unsigned long get_difftime_by_now();
-
+    static unsigned long get_difftime_2004();
     static unsigned long get_difftime_by_days(int days);
 
     static unsigned long get_difftime_by_years(int years);
@@ -149,6 +148,8 @@ public:
     static unsigned int UnsignedCharToInt(unsigned char* num);
 
     static unsigned char* IntToUnsignedChar(unsigned int num);
+
+    static void print_buffer(unsigned char* buffer, size_t blen);
 
 };
 

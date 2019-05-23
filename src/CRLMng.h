@@ -16,7 +16,8 @@
 
 #include <stdio.h>
 #include <iostream>
-#include <list>
+#include <map>
+#include <array>
 #include <thread>
 #include <mutex>
 #include <dirent.h>
@@ -49,17 +50,18 @@ public:
 
     static int Init();
     static void Start();
-    static void set_crl_list(std::string name);
+    static void set_crl_map(std::string name, unsigned char* hashid10);
     static int get_crls(unsigned char** buffer, size_t* beln, size_t* crl_num);
+    static int check_reported_crl(unsigned char* hashid10);
 
 private:
     static void crl_manage();
     static std::thread crl_manage_thread_;
     static unsigned long get_crl_serial_number();
     static int set_crl_serial_number(unsigned long sn); 
-    static int init_crl_list();
+    static int init_crl_map();
 
-    static std::list<std::string> crl_list_;
+    static std::map<std::string, std::array<unsigned char, 10>> crl_map_;
     static std::mutex crl_mutex_;
     static std::mutex crl_serial_mutex_;
     static unsigned long crl_serial_number_;
