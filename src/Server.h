@@ -18,6 +18,7 @@
 #include<string.h>
 #include<errno.h>
 #include<sys/types.h>
+#include<sys/stat.h>
 #include<sys/socket.h>
 #include<sys/wait.h>
 #include<sys/time.h>

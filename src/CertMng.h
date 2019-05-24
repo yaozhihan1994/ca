@@ -25,6 +25,7 @@
 #define PCRTS "pcrts/"
 #define RCRTS "rcrts/"
 
+#define DEFAULT_DEVICE_SERIAL_NUMBER "00000001"
 #define SUBJECT_INFO_NAME "xingyunhulian"
 #define PCRT_POOL 5
 #define RCRT_POOL 5
@@ -38,6 +39,9 @@ public:
 
     static int CertificateToFile(const char* filename, Certificate_t *crt);
     static Certificate_t* FileToCertificate(const char* filename);
+
+    static int CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t *crt);
+    static Certificate_t* DerToCertificate(unsigned char* buffer, size_t blen);
 
     static int CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt);
     static Certificate_t* BufferToCertificate(unsigned char* buffer, size_t blen);

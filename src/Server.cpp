@@ -63,6 +63,58 @@ int Server::Init(){
     }else{
         printf("Init check_ca fail\n");
         printf("Init create_ca start\n");
+
+        const char* ca_crt_filename = "crts";
+        const char* pcrt_filename = "pcrts";
+        const char* rcrt_filename = "rcrts";    
+        const char* crl_filename = "crls";
+        const char* serial_number_filename = "serial_number";
+        if (access(ca_crt_filename, F_OK) == -1) {
+            if (mkdir(ca_crt_filename, 493) == -1) {
+                return COMMON_ERROR;
+            }
+        }
+        if (access(pcrt_filename, F_OK) == -1) {
+            if (mkdir(pcrt_filename, 493) == -1) {
+                return COMMON_ERROR;
+            }
+        }
+        if (access(rcrt_filename, F_OK) == -1) {
+            if (mkdir(rcrt_filename, 493) == -1) {
+                return COMMON_ERROR;
+            }
+        }
+        if (access(crl_filename, F_OK) == -1) {
+            if (mkdir(crl_filename, 493) == -1) {
+                return COMMON_ERROR;
+            }
+        }
+        if (access(serial_number_filename, F_OK) == -1) {
+            if (mkdir(serial_number_filename, 493) == -1) {
+                return COMMON_ERROR;
+            }
+        }
+        if (access(CRL_SERIAL_NUMBER, F_OK) == -1) {
+            std::fstream fs;
+            fs.open(CRL_SERIAL_NUMBER, std::fstream::out);
+            if (!fs) {
+                printf("Init: create file: %s Failed!\n", CRL_SERIAL_NUMBER);
+                return COMMON_ERROR;
+            }
+            fs<<0;
+            fs.close();
+        }
+        if (access(DEVICE_SERIAL_NUMBER, F_OK) == -1) {
+            std::fstream fs;
+            fs.open(DEVICE_SERIAL_NUMBER, std::fstream::out);
+            if (!fs) {
+                printf("Init: create file: %s Failed!\n", DEVICE_SERIAL_NUMBER);
+                return COMMON_ERROR;
+            }
+            fs<<DEFAULT_DEVICE_SERIAL_NUMBER;
+            fs.close();
+        }
+
         if(create_ca() != COMMON_SUCCESS){
             printf("Init create_ca fail\n");
             return COMMON_ERROR;
@@ -115,9 +167,15 @@ int Server::init_ca(std::string key_filename, std::string crt_filename, s_CaInfo
         printf("init_ca CertificateToBuffer: %s fail\n", crt_filename.c_str());
         return COMMON_ERROR;
     }
+    unsigned char* der_buffer = NULL;
+    size_t dlen = 0;
+    if (CertMng::CertificateToDer(&der_buffer, &dlen, ca->crt) != COMMON_SUCCESS) {
+        printf("init_ca CertificateToDer: %s fail\n", crt_filename.c_str());
+        return COMMON_ERROR;
+    }
     unsigned char* hash = NULL;
     size_t hlen = 0;
-    if (CertOp::Sm3Hash(ca->buffer, ca->blen, &hash, &hlen) != COMMON_SUCCESS) {
+    if (CertOp::Sm3Hash(der_buffer, dlen, &hash, &hlen) != COMMON_SUCCESS) {
         printf("init_ca Sm3Hash: %s fail\n", crt_filename.c_str());
         return COMMON_ERROR;
     }
@@ -128,6 +186,7 @@ int Server::init_ca(std::string key_filename, std::string crt_filename, s_CaInfo
     }
     memcpy(hashid8, hash+32-8, 8);
     free(hash);
+    free(der_buffer);
     ca->hashid8 = hashid8;
     return COMMON_SUCCESS;
 }
@@ -181,7 +240,8 @@ int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_has
     unsigned char* hash = NULL;
     size_t hlen = 0;
     unsigned char* hashid8 = NULL;
-
+    unsigned char* der_buffer = NULL;
+    size_t dlen = 0;
     key = CertOp::CreateSm2KeyPair();
     if (!key) {
         printf("create_ca_to_file CreateSm2KeyPair fail\n");
@@ -219,7 +279,12 @@ int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_has
         goto err;
     }
 
-    if (CertOp::Sm3Hash(ca->buffer, ca->blen, &hash, &hlen) != COMMON_SUCCESS) {
+    if (CertMng::CertificateToDer(&der_buffer, &dlen, crt) != COMMON_SUCCESS) {
+        printf("create_ca_to_file CertificateToDer: %s fail\n", crt_filename.c_str());
+        goto err;
+    }
+
+    if (CertOp::Sm3Hash(der_buffer, dlen, &hash, &hlen) != COMMON_SUCCESS) {
         printf("create_ca_to_file Sm3Hash: %s fail\n", crt_filename.c_str());
         goto err;
     }
@@ -242,6 +307,9 @@ int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_has
         }
         if (hash) {
             free(hash);
+        }
+        if (der_buffer) {
+            free(der_buffer);
         }
     }
     return ret;
@@ -716,7 +784,8 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     size_t error_crt_start_difftime = 0;
     Crl_t* crl = NULL;
     std::string name;
-
+    unsigned char* der_buffer = NULL;
+    size_t der_len = 0;
     if((ecrt = CertMng::BufferToCertificate(ecrt_buffer, ecrt_size)) == NULL){
         printf("deal_with_C4: BufferToCertificate fail\n");
         goto err;
@@ -751,11 +820,16 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     }
 
     if (CertMng::CertificateVerify(error_crt_verify_key, error_crt) != COMMON_SUCCESS) {
-        printf("deal_with_C4: CertificateVerify fail\n");
+        printf("deal_with_C4deal_with_C4: CertificateVerify fail\n");
         goto err;
     }
 
-    if(CertOp::Sm3Hash(error_crt_buffer, error_crt_size, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
+    if (CertMng::CertificateToDer(&der_buffer, &der_len, error_crt) != COMMON_SUCCESS) {
+        printf("deal_with_C4 CertificateToDer fail\n");
+        goto err;
+    }
+
+    if(CertOp::Sm3Hash(der_buffer, der_len, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
         printf("deal_with_C4: Sm3Hash fail\n");
         goto err;
     }
@@ -789,6 +863,9 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     err:{
         if (error_crt_hash) {
             free(error_crt_hash);
+        }
+        if (der_buffer) {
+            free(der_buffer);
         }
         if (ecrt) {
             ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Certificate, ecrt);
@@ -927,7 +1004,8 @@ int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
     size_t error_crt_hash_size = 0;
     std::string name;
     unsigned char check_result = 0xff;
-
+    unsigned char* der_buffer = NULL;
+    size_t der_len = 0;
     if((ecrt = CertMng::BufferToCertificate(ecrt_buffer, ecrt_size)) == NULL){
         printf("deal_with_C6: BufferToCertificate fail\n");
         goto err;
@@ -966,7 +1044,12 @@ int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
         goto err;
     }
 
-    if(CertOp::Sm3Hash(error_crt_buffer, error_crt_size, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
+    if (CertMng::CertificateToDer(&der_buffer, &der_len, error_crt) != COMMON_SUCCESS) {
+        printf("deal_with_C6 CertificateToDer fail\n");
+        goto err;
+    }
+
+    if(CertOp::Sm3Hash(der_buffer, der_len, &error_crt_hash, &error_crt_hash_size) != COMMON_SUCCESS){
         printf("deal_with_C6: Sm3Hash fail\n");
         goto err;
     }
@@ -990,6 +1073,9 @@ int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
     err:{
         if (error_crt_hash) {
             free(error_crt_hash);
+        }
+        if (der_buffer) {
+            free(der_buffer);
         }
         if (ecrt) {
             ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Certificate, ecrt);
@@ -1033,14 +1119,18 @@ int main(int argc, char* argv[]) {
         printf("main: CRLMng::Init fail\n");
         return 0;
     }
-/*
-    Certificate_t* ecrt =  CertMng::BufferToCertificate(g_eca.buffer, g_eca.blen);
-    CertOp::print_buffer(ecrt->signature.choice.signature.buf, ecrt->signature.choice.signature.size);
-    Certificate_t* pcrt =  CertMng::BufferToCertificate(g_pca.buffer, g_pca.blen);
-    CertOp::print_buffer(pcrt->signature.choice.signature.buf, pcrt->signature.choice.signature.size);
-    Certificate_t* rcrt =  CertMng::BufferToCertificate(g_rca.buffer, g_rca.blen);
-    CertOp::print_buffer(rcrt->signature.choice.signature.buf, rcrt->signature.choice.signature.size);
-*/
+
+//  unsigned char* buff = NULL;
+//  size_t blen = 0;
+
+//  CertMng::CertificateToDer(&buff, &blen, g_eca.crt);
+//  printf("crt %d\n",blen);
+//  CertOp::print_buffer(buff, blen);
+//
+//  Certificate_t* c = CertMng::DerToCertificate(buff, blen);
+//  xer_fprint(stdout, &asn_DEF_Certificate, c);
+
+
     printf("main: CertMng::Start\n");
     CertMng::Start();
     printf("main: CRLMng::Start\n");

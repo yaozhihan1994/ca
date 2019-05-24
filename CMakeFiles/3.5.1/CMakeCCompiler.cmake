@@ -1,13 +1,13 @@
-set(CMAKE_C_COMPILER "/opt/fsl-imx-fb/4.9.88-2.0.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc")
-set(CMAKE_C_COMPILER_ARG1 "  -march=armv7-a -mfpu=neon -mfloat-abi=hard -mcpu=cortex-a9 --sysroot=/opt/fsl-imx-fb/4.9.88-2.0.0/sysroots/cortexa9hf-neon-poky-linux-gnueabi")
+set(CMAKE_C_COMPILER "/usr/bin/cc")
+set(CMAKE_C_COMPILER_ARG1 "")
 set(CMAKE_C_COMPILER_ID "GNU")
-set(CMAKE_C_COMPILER_VERSION "7.3.0")
+set(CMAKE_C_COMPILER_VERSION "5.4.0")
 set(CMAKE_C_COMPILER_WRAPPER "")
 set(CMAKE_C_STANDARD_COMPUTED_DEFAULT "11")
-set(CMAKE_C_COMPILE_FEATURES "c_std_90;c_function_prototypes;c_std_99;c_restrict;c_variadic_macros;c_std_11;c_static_assert")
-set(CMAKE_C90_COMPILE_FEATURES "c_std_90;c_function_prototypes")
-set(CMAKE_C99_COMPILE_FEATURES "c_std_99;c_restrict;c_variadic_macros")
-set(CMAKE_C11_COMPILE_FEATURES "c_std_11;c_static_assert")
+set(CMAKE_C_COMPILE_FEATURES "c_function_prototypes;c_restrict;c_variadic_macros;c_static_assert")
+set(CMAKE_C90_COMPILE_FEATURES "c_function_prototypes")
+set(CMAKE_C99_COMPILE_FEATURES "c_restrict;c_variadic_macros")
+set(CMAKE_C11_COMPILE_FEATURES "c_static_assert")
 
 set(CMAKE_C_PLATFORM_ID "Linux")
 set(CMAKE_C_SIMULATE_ID "")
@@ -40,7 +40,7 @@ set(CMAKE_C_LINKER_PREFERENCE 10)
 # Save compiler ABI information.
 set(CMAKE_C_SIZEOF_DATA_PTR "4")
 set(CMAKE_C_COMPILER_ABI "ELF")
-set(CMAKE_C_LIBRARY_ARCHITECTURE "")
+set(CMAKE_C_LIBRARY_ARCHITECTURE "i386-linux-gnu")
 
 if(CMAKE_C_SIZEOF_DATA_PTR)
   set(CMAKE_SIZEOF_VOID_P "${CMAKE_C_SIZEOF_DATA_PTR}")
@@ -51,7 +51,7 @@ if(CMAKE_C_COMPILER_ABI)
 endif()
 
 if(CMAKE_C_LIBRARY_ARCHITECTURE)
-  set(CMAKE_LIBRARY_ARCHITECTURE "")
+  set(CMAKE_LIBRARY_ARCHITECTURE "i386-linux-gnu")
 endif()
 
 set(CMAKE_C_CL_SHOWINCLUDES_PREFIX "")
@@ -62,7 +62,6 @@ endif()
 
 
 
-
 set(CMAKE_C_IMPLICIT_LINK_LIBRARIES "c")
-set(CMAKE_C_IMPLICIT_LINK_DIRECTORIES "/opt/fsl-imx-fb/4.9.88-2.0.0/sysroots/x86_64-pokysdk-linux/usr/lib/arm-poky-linux-gnueabi/gcc/arm-poky-linux-gnueabi/7.3.0;/opt/fsl-imx-fb/4.9.88-2.0.0/sysroots/cortexa9hf-neon-poky-linux-gnueabi/lib;/opt/fsl-imx-fb/4.9.88-2.0.0/sysroots/cortexa9hf-neon-poky-linux-gnueabi/usr/lib/arm-poky-linux-gnueabi/7.3.0;/opt/fsl-imx-fb/4.9.88-2.0.0/sysroots/cortexa9hf-neon-poky-linux-gnueabi/usr/lib")
+set(CMAKE_C_IMPLICIT_LINK_DIRECTORIES "/usr/lib/gcc/i686-linux-gnu/5;/usr/lib/i386-linux-gnu;/usr/lib;/lib/i386-linux-gnu;/lib")
 set(CMAKE_C_IMPLICIT_LINK_FRAMEWORK_DIRECTORIES "")

@@ -95,6 +95,51 @@ Certificate_t* CertMng::FileToCertificate(const char* filename){
     return crt;
 }
 
+int CertMng::CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
+   if (!crt) {
+        return COMMON_INVALID_PARAMS;
+    }
+    asn_enc_rval_t er = der_encode(&asn_DEF_Certificate, crt, CertOp::uper_callback, NULL);
+    if(er.encoded == -1) {
+        fprintf(stderr, "CertificateToDer: der_encode Cannot encode %s\n", er.failed_type->name);
+        return COMMON_ERROR;
+    } else {
+        int len = er.encoded;
+        unsigned char* buff = (unsigned char*)malloc(len);
+        if (!buff) {
+            printf("CertificateToDer: malloc buff fail\n");
+            return COMMON_ERROR;
+        }
+        asn_enc_rval_t ec = der_encode_to_buffer(&asn_DEF_Certificate, (void *)crt, (void*)buff, len);
+        if(ec.encoded == -1) {
+            fprintf(stderr, "CertificateToDer: der_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
+            if (buff) {
+                free(buff);
+            }
+            return COMMON_ERROR;
+        } else {
+        *blen = ec.encoded;
+        *buffer = buff;
+        }
+        return COMMON_SUCCESS;
+    }
+}
+
+Certificate_t* CertMng::DerToCertificate(unsigned char* buffer, size_t blen){
+    if (!buffer) {
+        return NULL;
+    }
+
+    Certificate_t* crt = NULL;
+    asn_dec_rval_t dr = ber_decode(0, &asn_DEF_Certificate, (void **)(&crt), (void *)buffer, blen);
+
+    if(dr.code != RC_OK){
+        printf("DerToCertificate: der_decode_complete fail\n");
+        return NULL;
+    }
+    return crt;
+}
+
 int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
     if (!crt) {
         return COMMON_INVALID_PARAMS;
