@@ -1,4 +1,4 @@
-#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
 
 #IncludeRegexScan: ^.*$
 
@@ -842,11 +842,11 @@ openssl/ec.h
 openssl/e_os2.h
 -
 
-/home/yzh/ca/src/CRLMng.cpp
+/home/yzh/CA/CA/src/CRLMng.cpp
 CRLMng.h
-/home/yzh/ca/src/CRLMng.h
+/home/yzh/CA/CA/src/CRLMng.h
 
-/home/yzh/ca/src/CRLMng.h
+/home/yzh/CA/CA/src/CRLMng.h
 stdio.h
 -
 iostream
@@ -862,15 +862,15 @@ mutex
 dirent.h
 -
 asn/Crl.h
-/home/yzh/ca/src/asn/Crl.h
+/home/yzh/CA/CA/src/asn/Crl.h
 CertOp.h
-/home/yzh/ca/src/CertOp.h
+/home/yzh/CA/CA/src/CertOp.h
 
-/home/yzh/ca/src/CertMng.cpp
+/home/yzh/CA/CA/src/CertMng.cpp
 CertMng.h
-/home/yzh/ca/src/CertMng.h
+/home/yzh/CA/CA/src/CertMng.h
 
-/home/yzh/ca/src/CertMng.h
+/home/yzh/CA/CA/src/CertMng.h
 stdio.h
 -
 iostream
@@ -884,13 +884,13 @@ mutex
 dirent.h
 -
 CertOp.h
-/home/yzh/ca/src/CertOp.h
+/home/yzh/CA/CA/src/CertOp.h
 
-/home/yzh/ca/src/CertOp.cpp
+/home/yzh/CA/CA/src/CertOp.cpp
 CertOp.h
-/home/yzh/ca/src/CertOp.h
+/home/yzh/CA/CA/src/CertOp.h
 
-/home/yzh/ca/src/CertOp.h
+/home/yzh/CA/CA/src/CertOp.h
 iostream
 -
 fstream
@@ -926,21 +926,21 @@ openssl/ecdsa.h
 openssl/err.h
 -
 asn/Certificate.h
-/home/yzh/ca/src/asn/Certificate.h
+/home/yzh/CA/CA/src/asn/Certificate.h
 
-/home/yzh/ca/src/Message.cpp
+/home/yzh/CA/CA/src/Message.cpp
 Message.h
-/home/yzh/ca/src/Message.h
+/home/yzh/CA/CA/src/Message.h
 
-/home/yzh/ca/src/Message.h
+/home/yzh/CA/CA/src/Message.h
 CertOp.h
-/home/yzh/ca/src/CertOp.h
+/home/yzh/CA/CA/src/CertOp.h
 
-/home/yzh/ca/src/Server.cpp
+/home/yzh/CA/CA/src/Server.cpp
 Server.h
-/home/yzh/ca/src/Server.h
+/home/yzh/CA/CA/src/Server.h
 
-/home/yzh/ca/src/Server.h
+/home/yzh/CA/CA/src/Server.h
 stdio.h
 -
 stdlib.h
@@ -968,11 +968,11 @@ mutex
 condition_variable
 -
 Message.h
-/home/yzh/ca/src/Message.h
+/home/yzh/CA/CA/src/Message.h
 CertMng.h
-/home/yzh/ca/src/CertMng.h
+/home/yzh/CA/CA/src/CertMng.h
 CRLMng.h
-/home/yzh/ca/src/CRLMng.h
+/home/yzh/CA/CA/src/CRLMng.h
 CertOp.h
-/home/yzh/ca/src/CertOp.h
+/home/yzh/CA/CA/src/CertOp.h
 

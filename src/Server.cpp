@@ -317,6 +317,8 @@ void Server::Handler(int sock, struct sockaddr_in addr){
             printf("Handler: recv msg timeout\n");
             break;
         }
+	printf("recv: %d\n",len);
+	CertOp::print_buffer(buffer,len);
         unsigned char cmd = 0xff;
         unsigned char* data = NULL;
         int result = COMMON_ERROR;
@@ -333,31 +335,31 @@ void Server::Handler(int sock, struct sockaddr_in addr){
         }
         //maybe use thead , but if recv too many msg it will have many thread 
         switch (cmd) {
-            case 0x00:{
+            case 0xc0:{
                 result = Server::deal_with_C0(data, dlen, sock);
                 break;
             }
-            case 0x01:{
+            case 0xc1:{
                 result = Server::deal_with_C1(data, dlen, sock);
                 break;
             }
-            case 0x02:{
+            case 0xc2:{
                 result = Server::deal_with_C2(data, dlen, sock);
                 break;
             }
-            case 0x03:{
+            case 0xc3:{
                 result = Server::deal_with_C3(data, dlen, sock);
                 break;
             }
-            case 0x04:{
+            case 0xc4:{
                 result = Server::deal_with_C4(data, dlen, sock);
                 break;
             }
-            case 0x05:{
+            case 0xc5:{
                 result = Server::deal_with_C5(data, dlen, sock);
                 break;
             }
-            case 0x06:{
+            case 0xc6:{
                 result = Server::deal_with_C6(data, dlen, sock);
                 break;
             }
@@ -388,7 +390,7 @@ int Server::deal_with_C0(unsigned char* data, size_t dlen, int sock){
         printf("deal_with_C0: COMMON_INVALID_PARAMS\n");
         return COMMON_INVALID_PARAMS;
     }
-    unsigned char cmd = 0x00;
+    unsigned char cmd = 0xc0;
     int ret = COMMON_ERROR; 
     unsigned char type = (*data);
     int flag = 0;
@@ -454,7 +456,7 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
         return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
-    unsigned char cmd = 0x01;
+    unsigned char cmd = 0xc1;
     int flag = 0;
     EC_KEY* key = NULL;
     unsigned char* pub_key = NULL;
@@ -492,6 +494,10 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
         printf("deal_with_C1: CreateCertificate ecrt fail\n");
         goto err;
     }
+
+    //printf("deal_with_C1: sig   %d\n", ecrt->signature.choice.signature.size );
+    //CertOp::print_buffer(ecrt->signature.choice.signature.buf, ecrt->signature.choice.signature.size);
+
     if (CertMng::CertificateToBuffer(&ecrt_buffer, &ecrt_buffer_size, ecrt) != COMMON_SUCCESS) {
         printf("deal_with_C1: CertificateToBuffer ecrt fail\n");
         goto err;
@@ -545,7 +551,7 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
     }
 
     int ret = COMMON_ERROR;
-    unsigned char cmd = 0x02;
+    unsigned char cmd = 0xc2;
     int flag = 0;
     unsigned char* crt_buffer = NULL;
     size_t crt_buffer_size = 0;
@@ -620,7 +626,7 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
         return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
-    unsigned char cmd = 0x03;
+    unsigned char cmd = 0xc3;
     int flag = 0;
     unsigned char* crt_buffer = NULL;
     size_t crt_buffer_size = 0;
@@ -693,7 +699,7 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
         return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
-    unsigned char cmd = 0x04;
+    unsigned char cmd = 0xc4;
     unsigned char error_crt_type = *data;
     size_t error_crt_size = CERT_LENGTH;
     unsigned char error_crt_buffer[error_crt_size];
@@ -806,7 +812,7 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
     }
     int ret = COMMON_ERROR;
     int i;
-    unsigned char cmd = 0x05;
+    unsigned char cmd = 0xc5;
     Certificate_t* ecrt = NULL;
     unsigned char* crls_buffer = NULL;
     size_t crls_blen = 0;
@@ -906,7 +912,7 @@ int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
         return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
-    unsigned char cmd = 0x06;
+    unsigned char cmd = 0xc6;
     unsigned char error_crt_type = *data;
     size_t error_crt_size = CERT_LENGTH;
     unsigned char error_crt_buffer[error_crt_size];
@@ -1027,7 +1033,14 @@ int main(int argc, char* argv[]) {
         printf("main: CRLMng::Init fail\n");
         return 0;
     }
-
+/*
+    Certificate_t* ecrt =  CertMng::BufferToCertificate(g_eca.buffer, g_eca.blen);
+    CertOp::print_buffer(ecrt->signature.choice.signature.buf, ecrt->signature.choice.signature.size);
+    Certificate_t* pcrt =  CertMng::BufferToCertificate(g_pca.buffer, g_pca.blen);
+    CertOp::print_buffer(pcrt->signature.choice.signature.buf, pcrt->signature.choice.signature.size);
+    Certificate_t* rcrt =  CertMng::BufferToCertificate(g_rca.buffer, g_rca.blen);
+    CertOp::print_buffer(rcrt->signature.choice.signature.buf, rcrt->signature.choice.signature.size);
+*/
     printf("main: CertMng::Start\n");
     CertMng::Start();
     printf("main: CRLMng::Start\n");

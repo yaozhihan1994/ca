@@ -68,7 +68,7 @@ int create_socket(){
 
     bzero(&addr_,sizeof(struct sockaddr_in));
     addr_.sin_family = AF_INET;
-    addr_.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addr_.sin_addr.s_addr = inet_addr("192.168.10.224");
     addr_.sin_port = htons(6666); 
 
     return 0;
@@ -235,13 +235,13 @@ int main(){
 	//memcpy(data, id.c_str(), 8);
 	unsigned char *msg = NULL;
 	size_t mlen = 0;
-/*
+
 size_t l = 162*2+1;
 unsigned char c4[l];
 memset(c4, 0x02, 1);
 memcpy(c4+1, pcrt, 162);
 memcpy(c4+1+162, ecrt, 162);
-	MessageEncode(0x06, c4, l, &msg, &mlen);
+	MessageEncode(0xc4, c4, l, &msg, &mlen);
 
 	if(send(sock, msg, mlen, 0) == -1){
 		perror("send fail");
@@ -249,9 +249,9 @@ memcpy(c4+1+162, ecrt, 162);
 	printf("send: \n");
 	print_buffer(msg, mlen);
 	free(msg);
-*/
-	
 
+	
+/*
 	MessageEncode(0x05, ecrt, 162, &msg, &mlen);
 	if(send(sock, msg, mlen, 0) == -1){
 		perror("send fail");
@@ -259,7 +259,7 @@ memcpy(c4+1+162, ecrt, 162);
 	printf("send: \n");
 	print_buffer(msg, mlen);
 	free(msg);
-
+*/
 	getchar();
 return 0;
 }
