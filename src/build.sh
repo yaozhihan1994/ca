@@ -1,1 +1,0 @@
-$CXX -o server ../asn/*.c *.cpp -std=c++0x -fpermissive -lssl -lcrypto -lpthread -I . -I /home/yzh/ca/include -I /home/yzh/ca/include/asn -I /home/yzh/ca/include/openssl -L /home/yzh/ca/lib -Wl,-rpath=/home/yzh/ca/lib

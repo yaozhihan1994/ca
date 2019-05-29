@@ -464,7 +464,6 @@ int Server::deal_with_C0(unsigned char* data, size_t dlen, int sock){
     unsigned char cmd = 0xc0;
     int ret = COMMON_ERROR; 
     unsigned char type = (*data);
-    int flag = 0;
     unsigned  char* msg = NULL;
     size_t mlen = 0;
     unsigned char buffer[CERT_LENGTH+1];
@@ -528,7 +527,6 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
     }
     int ret = COMMON_ERROR;
     unsigned char cmd = 0xc1;
-    int flag = 0;
     EC_KEY* key = NULL;
     unsigned char* pub_key = NULL;
     unsigned char* pri_key = NULL;
@@ -623,7 +621,6 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
 
     int ret = COMMON_ERROR;
     unsigned char cmd = 0xc2;
-    int flag = 0;
     unsigned char* crt_buffer = NULL;
     size_t crt_buffer_size = 0;
     unsigned char* key_buffer = NULL;
@@ -698,7 +695,6 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
     }
     int ret = COMMON_ERROR;
     unsigned char cmd = 0xc3;
-    int flag = 0;
     unsigned char* crt_buffer = NULL;
     size_t crt_buffer_size = 0;
     unsigned char* key_buffer = NULL;
@@ -1067,7 +1063,7 @@ int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
     }
 
 //messageencode + send
-    if (Message::SendErrorOrSuccCode(sock, cmd, 0x00) != COMMON_SUCCESS) {
+    if (Message::SendErrorOrSuccCode(sock, cmd, check_result) != COMMON_SUCCESS) {
         printf("deal_with_C6: SendErrorOrSuccCode fail\n");
         goto err;
     }

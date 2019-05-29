@@ -376,10 +376,7 @@ Certificate_t* CertMng::CreateCertificate(int ctype, int  stype, unsigned char* 
     Certificate_t* crt = 0;
     std::string subject_name = SUBJECT_INFO_NAME;
     size_t subject_name_len = subject_name.length();
-    unsigned char* buffer = NULL;
-    size_t blen = 0;
     unsigned char* sig = NULL;
-    size_t slen = 0;
 
     crt = (Certificate_t* )calloc(1, sizeof(Certificate_t));
     if (!crt) {
