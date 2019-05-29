@@ -96,7 +96,7 @@ Certificate_t* CertMng::FileToCertificate(const char* filename){
 }
 
 int CertMng::CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
-   if (!crt) {
+   if (!crt || !blen) {
         return COMMON_INVALID_PARAMS;
     }
     asn_enc_rval_t er = der_encode(&asn_DEF_Certificate, crt, CertOp::uper_callback, NULL);
@@ -141,7 +141,7 @@ Certificate_t* CertMng::DerToCertificate(unsigned char* buffer, size_t blen){
 }
 
 int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
-    if (!crt) {
+    if (!crt ||!blen) {
         return COMMON_INVALID_PARAMS;
     }
     asn_enc_rval_t er = uper_encode(&asn_DEF_Certificate, crt, CertOp::uper_callback, NULL);
@@ -171,7 +171,7 @@ int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certifica
 }
 
 int CertMng::get_sign_der_buffer(Certificate_t* crt, unsigned char** buffer, size_t* blen){
-    if (!crt) {
+    if (!crt || !blen) {
         return COMMON_INVALID_PARAMS;
     }    
     asn_enc_rval_t ec;
@@ -506,6 +506,10 @@ void CertMng::rcrt_manage(){
 }
 
 int CertMng::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen){
+    if (!clen || !klen) {
+        printf("get_pcrt_and_pkey COMMON_INVALID_PARAMS \n");
+        return COMMON_INVALID_PARAMS;
+    }
     int ret = COMMON_ERROR;
     unsigned char* buffer = NULL;
     size_t blen = 0;
@@ -567,7 +571,11 @@ int CertMng::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char*
 }
 
 int CertMng::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen){
-    std::lock_guard<std::mutex> lck(rcrt_mutex_);
+
+    if (!clen || !klen) {
+        printf("get_rcrt_and_rkey COMMON_INVALID_PARAMS \n");
+        return COMMON_INVALID_PARAMS;
+    }
     int ret = COMMON_ERROR;
     unsigned char* buffer = NULL;
     size_t blen = 0;
@@ -576,6 +584,7 @@ int CertMng::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char*
     unsigned char* rkey = NULL;
     size_t rkey_len = 0;
 
+    std::lock_guard<std::mutex> lck(rcrt_mutex_);
     for (std::list<std::string>::iterator i = rcrt_list_.begin(); i != rcrt_list_.end(); ) {
         std::string name = *i;
         //end_time > now ? 

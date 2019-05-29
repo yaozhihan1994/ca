@@ -233,6 +233,9 @@ int Server::create_ca(){
 int Server::create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_hashid8, EC_KEY* sign_key,
                               std::string key_filename, std::string crt_filename, s_CaInfo* ca){
 
+    if (ctype != ROOT_CA_CRT && (!sign_crt_hashid8 || !sign_key)) {
+        return COMMON_INVALID_PARAMS;
+    }
     int ret = COMMON_ERROR;
     EC_KEY* key = NULL;
     Certificate_t* crt = NULL;

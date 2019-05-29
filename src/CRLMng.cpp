@@ -90,7 +90,7 @@ Crl_t* CRLMng::FileToCrl(const char* filename){
 }
 
 int CRLMng::CrlToBuffer(unsigned char** buffer, size_t* blen, Crl_t *crl){
-    if (!crl) {
+    if (!crl || !blen) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -136,7 +136,7 @@ Crl_t* CRLMng::BufferToCrl(unsigned char* buffer, size_t blen){
 }
 
 int CRLMng::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs){
-    if (!tbs) {
+    if (!tbs || !blen) {
         return COMMON_INVALID_PARAMS;
     }
     asn_enc_rval_t er = uper_encode(&asn_DEF_ToBeSignedCrl, tbs, CertOp::uper_callback, NULL);
@@ -404,13 +404,21 @@ int CRLMng::init_crl_map(){
 }
 
 void CRLMng::set_crl_map(std::string name, unsigned char* hashid10){
-    std::array<unsigned char, 10> arr {};
+    if (!hashid10) {
+        printf("set_crl_map COMMON_INVALID_PARAMS\n");
+        return;
+    }
+    std::array<unsigned char, 10> arr{};
     memcpy(arr.data(), hashid10, 10);
     std::lock_guard<std::mutex> lck(crl_mutex_);
     crl_map_.insert(std::pair<std::string, std::array<unsigned char, 10>>(name, arr));
 }
 
 int CRLMng::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
+    if (!crl_num || !blen) {
+        printf("get_crls COMMON_INVALID_PARAMS\n");
+        return COMMON_INVALID_PARAMS;
+    }
     std::string name;
     int num = 0;
     int len = 0;

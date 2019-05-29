@@ -57,7 +57,7 @@ int Message::MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, 
 }
 
 int Message::MessageDecode(unsigned char* buffer, size_t blen, unsigned char* cmd, unsigned char** data, size_t* dlen){
-    if (buffer == NULL) {
+    if (buffer == NULL || !cmd ||!dlen) {
         return COMMON_INVALID_PARAMS;
     }
 

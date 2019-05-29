@@ -50,7 +50,7 @@ EC_KEY* CertOp::CreateSm2KeyPair(){
 }
 
 int CertOp::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** sig, size_t* sig_len){
-    if (!key || !msg) {
+    if (!key || !msg ||!sig_len) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -62,7 +62,6 @@ int CertOp::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsi
     unsigned char cr[32]={};
     unsigned char cs[32]={};
     unsigned char* buffer = NULL;
-    int slen = 0;
     
     signature = SM2_do_sign(key, EVP_sm3(), id, msg, msg_len);
     if (!signature) {
@@ -97,13 +96,7 @@ int CertOp::SignData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsi
 
     *sig = buffer;
     *sig_len = 64;
-//  slen = i2d_ECDSA_SIG(signature, sig);
-//  if (slen == 0) {
-//      printf("SignData: i2d_ECDSA_SIG fail\n");
-//      goto err;
-//  }
-//
-//  *sig_len = slen;
+
     ret = COMMON_SUCCESS;
     err:{
         if (signature) {
@@ -146,8 +139,7 @@ int CertOp::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_l
         goto err;
     }
 
-    ECDSA_SIG_set0(ecdsa_sig, r, s);
-    if (!ecdsa_sig) {
+    if (1 != ECDSA_SIG_set0(ecdsa_sig, r, s)) {
         printf("VerifySignedData: ECDSA_SIG_set0 fail\n");
         goto err;
     }
@@ -167,7 +159,7 @@ int CertOp::VerifySignedData(EC_KEY* key, const unsigned char* sig, size_t sig_l
 }
 
 int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, unsigned char** ciphertext, size_t* ciphertext_len){
-    if (!key || !msg) {
+    if (!key || !msg ||!ciphertext_len) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -181,7 +173,8 @@ int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, u
         goto err;
     }
 
-    c = (unsigned char* )calloc(len + 2, sizeof(unsigned char));
+    //c = (unsigned char* )calloc(len + 2, sizeof(unsigned char));
+    c = (unsigned char*)OPENSSL_zalloc(len);
     if (!c) {
         printf("EncryptData: malloc ciphertext fail\n");
         goto err;
@@ -189,7 +182,7 @@ int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, u
 
     if (1 != SM2_encrypt(key, EVP_sm3(), (uint8_t* )msg, msg_len, (uint8_t* )c, ciphertext_len)) {
         printf("EncryptData: SM2_encrypt fail\n");
-        free(c);
+        OPENSSL_free(c);
         goto err;
     }
 
@@ -202,7 +195,7 @@ int CertOp::EncryptData(EC_KEY* key, const unsigned char* msg, size_t msg_len, u
 }
 
 int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t ciphertext_len, unsigned char** plaintext, size_t* plaintext_len){
-    if (!key || !ciphertext) {
+    if (!key || !ciphertext ||!plaintext_len) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -216,7 +209,8 @@ int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t cip
         goto err;
     }
 
-    p = (unsigned char* )calloc(len, sizeof(unsigned char));
+    //p = (unsigned char* )calloc(len, sizeof(unsigned char));
+    p = (unsigned char* )OPENSSL_zalloc(len);
     if (!p) {
         printf("DecryptData: malloc plaintext fail\n");
         goto err;
@@ -224,7 +218,7 @@ int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t cip
     
     if (1 != SM2_decrypt(key, EVP_sm3(), (uint8_t* )ciphertext, ciphertext_len, (uint8_t* )p, plaintext_len)) {
         printf("DecryptData: SM2_decrypt fail\n");
-        free(p);
+        OPENSSL_free(p);
         goto err;
     }
 
@@ -237,7 +231,7 @@ int CertOp::DecryptData(EC_KEY* key, const unsigned char* ciphertext, size_t cip
 }
 
 int CertOp::Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, size_t* hash_len){
-    if (!msg) {
+    if (!msg || !hash_len) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -285,7 +279,7 @@ int CertOp::Sm3Hash(unsigned char* msg, size_t msg_len, unsigned char** hash, si
 int CertOp::EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, int plaintext_len, unsigned char *key,
                                              unsigned char *iv, unsigned char **ciphertext, int* ciphertext_len){
 
-    if (!plaintext || !key || !iv) {
+    if (!plaintext || !key ||((type == 2)&&(iv==NULL)) ||!ciphertext_len) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -367,7 +361,7 @@ int CertOp::EncryptDataBySm4(SymmetricAlgorithm type, unsigned char *plaintext, 
 int CertOp::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext, int ciphertext_len, unsigned char* key, 
                                               unsigned char* iv, unsigned char** plaintext, int* plaintext_len){
 
-    if (!ciphertext || !key) {
+    if (!ciphertext || !key ||((type == 2)&&(iv==NULL)) ||!plaintext_len) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -447,7 +441,7 @@ int CertOp::DecryptDataBySm4(SymmetricAlgorithm type, unsigned char *ciphertext,
 }
 
 int CertOp::DeriveKey(EC_KEY* mkey, EC_KEY* okey, unsigned char** key, size_t* keylen){
-    if (!mkey || !okey) {
+    if (!mkey || !okey ||!keylen) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -672,7 +666,7 @@ unsigned long CertOp::get_time_by_diff(unsigned long diff){
 }
 
 int CertOp::FileToBuffer(const char* filename, unsigned char** buff, size_t* blen){
-    if (!filename) {
+    if (!filename || !blen) {
         return COMMON_INVALID_PARAMS;
     }
 
@@ -888,6 +882,9 @@ unsigned char* CertOp::IntToUnsignedChar(unsigned int num){
 }
 
 void CertOp::print_buffer(unsigned char* buffer, size_t blen){
+    if (!buffer) {
+        return;
+    }
     printf("\n");
     for (int i=0; i<blen; i++) {
         printf("0x%02x ", *(buffer+i));
