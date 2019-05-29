@@ -55,8 +55,8 @@ public:
     static Certificate_t* CreateCertificate(int ctype, int  stype, 
                                             unsigned char* public_key, unsigned char* sign_crt_hashid8, EC_KEY* sign_key);
 
-    static int get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen);
-    static int get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen);
+    static int get_pcrt_and_pkey(unsigned char** buffer, size_t* blen);
+    static int get_rcrt_and_rkey(unsigned char** buffer, size_t* blen);
 
     static int Init();
     static void Start();

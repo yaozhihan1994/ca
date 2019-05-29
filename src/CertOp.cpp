@@ -675,11 +675,18 @@ int CertOp::FileToBuffer(const char* filename, unsigned char** buff, size_t* ble
         printf("FileToBuffer: Cannot open file: %s\n", filename);
         return COMMON_ERROR;
     }
-    unsigned char *buffer = (unsigned char* )calloc(1024, sizeof(unsigned char));
+
+    unsigned char buf[1024];
     size_t len = 0;
     for (int i = 0; i<1024; i++, len++) {
-        if (1 != fread(buffer + i, sizeof(unsigned char), 1, fp)) break;
+        if (1 != fread(buf + i, sizeof(unsigned char), 1, fp)) break;
     }
+    unsigned char *buffer = (unsigned char* )calloc(len, sizeof(unsigned char));
+    if (!buffer) {
+        printf("FileToBuffer: calloc buffer fail\n");
+        return COMMON_ERROR;
+    }
+    memcpy(buffer, buf, len);
     *blen = len;
     *buff = buffer;
     fclose(fp);

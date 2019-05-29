@@ -597,6 +597,9 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
         if (msg) {
             free(msg);
         }
+        if (pri_key) {
+            free(pri_key);
+        }
         if (pub_key) {
             free(pub_key);
         }
@@ -621,10 +624,6 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
 
     int ret = COMMON_ERROR;
     unsigned char cmd = 0xc2;
-    unsigned char* crt_buffer = NULL;
-    size_t crt_buffer_size = 0;
-    unsigned char* key_buffer = NULL;
-    size_t key_buffer_size = 0;
     unsigned char* msg = NULL;
     size_t mlen = 0;
     unsigned char* buffer = NULL;
@@ -640,19 +639,10 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
         goto err;
     }
 
-    if(CertMng::get_pcrt_and_pkey(&crt_buffer, &crt_buffer_size, &key_buffer, &key_buffer_size) != COMMON_SUCCESS){
+    if(CertMng::get_pcrt_and_pkey(&buffer, &blen) != COMMON_SUCCESS){
         printf("deal_with_C2: get_pcrt_and_pkey fail\n");
         goto err;
     }
-
-    blen = crt_buffer_size+PRIVATE_KEY_LENGTH;
-    buffer = (unsigned char* )malloc(blen);
-    if (!buffer) {
-        printf("deal_with_C2: malloc buffer buffer fail\n");
-        goto err;
-    }
-    memcpy(buffer, key_buffer, PRIVATE_KEY_LENGTH);
-    memcpy(buffer+PRIVATE_KEY_LENGTH, crt_buffer, crt_buffer_size);
 
     if (Message::MessageEncode(cmd, buffer, blen, &msg, &mlen) != COMMON_SUCCESS) {
         printf("deal_with_C2: MessageEncode pcrt fail\n");
@@ -666,17 +656,11 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
 
     ret = COMMON_SUCCESS;
     err:{
-        if (crt_buffer) {
-            free(crt_buffer);
-        }
-        if (key_buffer) {
-            free(key_buffer);
+        if (buffer) {
+            free(buffer);
         }
         if (msg) {
             free(msg);
-        }
-        if (buffer) {
-            free(buffer);
         }
         if (ecrt) {
             ASN_STRUCT_FREE_CONTENTS_ONLY(asn_DEF_Certificate, ecrt);
@@ -695,10 +679,6 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
     }
     int ret = COMMON_ERROR;
     unsigned char cmd = 0xc3;
-    unsigned char* crt_buffer = NULL;
-    size_t crt_buffer_size = 0;
-    unsigned char* key_buffer = NULL;
-    size_t key_buffer_size = 0;
     unsigned char* msg = NULL;
     size_t mlen = 0;
     unsigned char* buffer = NULL;
@@ -714,19 +694,10 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
         goto err;
     }
 
-    if(CertMng::get_rcrt_and_rkey(&crt_buffer, &crt_buffer_size, &key_buffer, &key_buffer_size)){
+    if(CertMng::get_rcrt_and_rkey(&buffer, &blen)){
         printf("deal_with_C3: get_rcrt_and_rkey fail\n");
         goto err;
     }
-
-    blen = crt_buffer_size+PRIVATE_KEY_LENGTH;
-    buffer = (unsigned char* )malloc(blen);
-    if (!buffer) {
-        printf("deal_with_C3: malloc buffer buffer fail\n");
-        goto err;
-    }
-    memcpy(buffer, key_buffer, PRIVATE_KEY_LENGTH);
-    memcpy(buffer+PRIVATE_KEY_LENGTH, crt_buffer, crt_buffer_size);
 
     if (Message::MessageEncode(cmd, buffer, blen, &msg, &mlen) != COMMON_SUCCESS) {
         printf("deal_with_C3: MessageEncode pcrt fail\n");
@@ -739,12 +710,6 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
 
     ret = COMMON_SUCCESS;
     err:{
-        if (crt_buffer) {
-            free(crt_buffer);
-        }
-        if (key_buffer) {
-            free(key_buffer);
-        }
         if (msg) {
             free(msg);
         }

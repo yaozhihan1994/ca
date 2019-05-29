@@ -270,6 +270,9 @@ int CertMng::get_sign_der_buffer(Certificate_t* crt, unsigned char** buffer, siz
 
     *buffer = buff;
     *blen = buff_len;
+//    printf("\n-----------------der:%d---------------\n", buff_len);
+//    CertOp::print_buffer(buff, buff_len);
+//    printf("\n-----------------der---------------\n\n");
     return COMMON_SUCCESS;
 }
 
@@ -502,50 +505,27 @@ void CertMng::rcrt_manage(){
     printf("rcrt_manage thread dead\n");
 }
 
-int CertMng::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen){
-    if (!clen || !klen) {
+int CertMng::get_pcrt_and_pkey(unsigned char** buffer, size_t* blen){
+    if (!blen) {
         printf("get_pcrt_and_pkey COMMON_INVALID_PARAMS \n");
         return COMMON_INVALID_PARAMS;
     }
-    int ret = COMMON_ERROR;
-    unsigned char* buffer = NULL;
-    size_t blen = 0;
-    unsigned char* pcrt = NULL;
-    size_t pcrt_len = 0;
-    unsigned char* pkey = NULL;
-    size_t pkey_len = 0;
+    unsigned char* buff = NULL;
+    size_t buff_len = 0;
+
     std::lock_guard<std::mutex> lck(pcrt_mutex_);
     for (std::list<std::string>::iterator i = pcrt_list_.begin(); i != pcrt_list_.end(); ) {
         std::string name = *i;
         //end_time > now ? 
         if ( strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) > CertOp::get_time_now() ) {
             name = PCRTS + name;
-            if(CertOp::FileToBuffer(name.c_str(), &buffer, &blen) != COMMON_SUCCESS){
+            if(CertOp::FileToBuffer(name.c_str(), &buff, &buff_len) != COMMON_SUCCESS){
                 printf("CertificateManage: get_pcrt_and_pkey FileToBuffer fail\n");
-                goto err;
+                break;
             }   
 
-            pkey = (unsigned char* )malloc(PRIVATE_KEY_LENGTH);
-            if (!pkey) {
-                printf("CertificateManage: get_pcrt_and_pkey malloc pkey fail\n");
-                goto err;
-            }
-
-            pcrt = (unsigned char* )malloc(blen - PRIVATE_KEY_LENGTH);
-            if (!pcrt) {
-                printf("CertificateManage: get_pcrt_and_pkey malloc pcrt fail\n");
-                free(pkey);
-                goto err;
-            }
-            memcpy(pkey, buffer, PRIVATE_KEY_LENGTH);
-            memcpy(pcrt, buffer + PRIVATE_KEY_LENGTH, blen - PRIVATE_KEY_LENGTH);
-            pkey_len = PRIVATE_KEY_LENGTH;
-            pcrt_len = blen - PRIVATE_KEY_LENGTH;
-
-            *crt = pcrt;
-            *clen = pcrt_len;
-            *key = pkey;
-            *klen = pkey_len;
+            *buffer = buff;
+            *blen = buff_len;
 
             pcrt_list_.erase(i++);
             remove(name.c_str());
@@ -554,32 +534,22 @@ int CertMng::get_pcrt_and_pkey(unsigned char** crt, size_t* clen, unsigned char*
             i++;
         }
     }
-    if (!pcrt || !pkey) {
+    if (NULL == buff) {
         printf("CertificateManage: get_pcrt_and_pkey no pcrt can use\n");
-        goto err;
+        return COMMON_ERROR;
     }
-    ret = COMMON_SUCCESS;
-    err:{
-        if (buffer) {
-            free(buffer);
-        }
-    }
-    return ret;
+    return COMMON_SUCCESS;
 }
 
-int CertMng::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char** key, size_t* klen){
+int CertMng::get_rcrt_and_rkey(unsigned char** buffer, size_t* blen){
 
-    if (!clen || !klen) {
+    if (!blen) {
         printf("get_rcrt_and_rkey COMMON_INVALID_PARAMS \n");
         return COMMON_INVALID_PARAMS;
     }
-    int ret = COMMON_ERROR;
-    unsigned char* buffer = NULL;
-    size_t blen = 0;
-    unsigned char* rcrt = NULL;
-    size_t rcrt_len = 0;
-    unsigned char* rkey = NULL;
-    size_t rkey_len = 0;
+
+    unsigned char* buff = NULL;
+    size_t buff_len = 0;
 
     std::lock_guard<std::mutex> lck(rcrt_mutex_);
     for (std::list<std::string>::iterator i = rcrt_list_.begin(); i != rcrt_list_.end(); ) {
@@ -587,31 +557,13 @@ int CertMng::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char*
         //end_time > now ? 
         if ( strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) > CertOp::get_time_now() ) {
             name = RCRTS + name;
-            if(CertOp::FileToBuffer(name.c_str(), &buffer, &blen) != COMMON_SUCCESS){
+            if(CertOp::FileToBuffer(name.c_str(), &buff, &buff_len) != COMMON_SUCCESS){
                 printf("CertificateManage: get_rcrt_and_rkey FileToBuffer fail\n");
-                goto err;
+                break;
             }   
-            rkey = (unsigned char* )malloc(PRIVATE_KEY_LENGTH);
-            if (!rkey) {
-                printf("CertificateManage: get_rcrt_and_rkey malloc rkey fail\n");
-                goto err;
-            }
 
-            rcrt = (unsigned char* )malloc(blen - PRIVATE_KEY_LENGTH);
-            if (!rcrt) {
-                printf("CertificateManage: get_rcrt_and_rkey malloc rcrt fail\n");
-                free(rkey);
-                goto err;
-            }
-            memcpy(rkey, buffer, PRIVATE_KEY_LENGTH);
-            memcpy(rcrt, buffer + PRIVATE_KEY_LENGTH, blen - PRIVATE_KEY_LENGTH);
-            rkey_len = PRIVATE_KEY_LENGTH;
-            rcrt_len = blen - PRIVATE_KEY_LENGTH;
-
-            *crt = rcrt;
-            *clen = rcrt_len;
-            *key = rkey;
-            *klen = rkey_len;
+            *buffer = buff;
+            *blen = buff_len;
 
             rcrt_list_.erase(i++);
             remove(name.c_str());
@@ -620,17 +572,11 @@ int CertMng::get_rcrt_and_rkey(unsigned char** crt, size_t* clen, unsigned char*
             i++;
         }
     }
-    if (!rcrt || !rkey) {
+    if (NULL == buff) {
         printf("CertificateManage: get_rcrt_and_rkey no rcrt can use\n");
-        goto err;
+        return COMMON_ERROR;
     }
-    ret = COMMON_SUCCESS;
-    err:{
-        if (buffer) {
-            free(buffer);
-        }
-    }
-    return ret;
+    return COMMON_SUCCESS;
 }
 
 int CertMng::Init(){
