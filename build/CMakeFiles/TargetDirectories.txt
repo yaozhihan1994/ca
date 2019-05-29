@@ -1,0 +1,3 @@
+/home/yzh/CA/CA/CA/build/CMakeFiles/rebuild_cache.dir
+/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir
+/home/yzh/CA/CA/CA/build/CMakeFiles/edit_cache.dir
