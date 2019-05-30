@@ -702,7 +702,7 @@ int CertOp::BufferToFile(const char* filename, unsigned char* buff, size_t blen)
         printf("BufferToFile: Cannot open file: %s\n", filename);
         return COMMON_ERROR;
     }
-    for (int i = 0; i < blen; i++) {
+    for (size_t i = 0; i < blen; i++) {
         fprintf(fp ,"%c", *(buff+i));
     }
     fclose(fp);
@@ -893,7 +893,7 @@ void CertOp::print_buffer(unsigned char* buffer, size_t blen){
         return;
     }
     printf("\n");
-    for (int i=0; i<blen; i++) {
+    for (size_t i=0; i<blen; i++) {
         printf("0x%02x ", *(buffer+i));
     }
     printf("\n");

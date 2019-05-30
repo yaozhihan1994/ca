@@ -8,7 +8,7 @@ include_directories(../include/
 
 link_directories(../lib/)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++0x")     
 
 aux_source_directory(../src/asn/ SRC_MY)
 

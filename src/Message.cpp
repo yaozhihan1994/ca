@@ -97,11 +97,11 @@ int Message::SendMsg(int sock, void* msg, size_t mlen){
         printf("SendMsg fail\n");
         return COMMON_ERROR;
     }
-    printf("send : %d\n", mlen);
-	for(int i = 0; i<mlen; i++){
-		printf("0x%02x ",*((unsigned char*)msg+i));
-	}
-	printf("\n");
+    std::cout<<"send : "<<mlen<<std::endl;;
+    for(size_t i = 0; i<mlen; i++){
+	printf("0x%02x ",*((unsigned char*)msg+i));
+    }
+printf("\n");
     return COMMON_SUCCESS;
 }
 

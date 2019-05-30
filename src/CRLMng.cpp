@@ -373,7 +373,7 @@ int CRLMng::init_crl_map(){
         }
     }
     closedir(dir);
-    printf("CrlManage crl_list size: %d\n",  crl_map_.size());
+    std::cout<<"CrlManage crl_list size: "<<crl_map_.size()<<std::endl;
     if (crl_serial_number_ == 0 && crl_map_.size() ==0) {
         Crl_t* crl = NULL;
         unsigned char hashid10[10];

@@ -78,7 +78,7 @@ typedef struct CaInfo{
     EC_KEY* key;
     Certificate_t* crt;
     unsigned char* buffer;
-    unsigned int blen;
+    size_t blen;
     unsigned char* hashid8;
 
 } s_CaInfo;

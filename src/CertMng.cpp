@@ -95,7 +95,7 @@ Certificate_t* CertMng::FileToCertificate(const char* filename){
     return crt;
 }
 
-int CertMng::CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
+int CertMng::CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t* crt){
    if (!crt || !blen) {
         return COMMON_INVALID_PARAMS;
     }
@@ -140,7 +140,7 @@ Certificate_t* CertMng::DerToCertificate(unsigned char* buffer, size_t blen){
     return crt;
 }
 
-int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt){
+int CertMng::CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t* crt){
     if (!crt ||!blen) {
         return COMMON_INVALID_PARAMS;
     }
@@ -613,7 +613,7 @@ int CertMng::init_pcrt_list(){
         }
     }
     closedir(dir);
-    printf("CertificateManage pcrt_list_ size: %d\n",  pcrt_list_.size());
+    std::cout<<"CertificateManage pcrt_list_ size: "<<pcrt_list_.size()<<std::endl;
     printf("CertificateManage init_pcrt_list end\n");
     return COMMON_SUCCESS;
 }
@@ -632,7 +632,7 @@ int CertMng::init_rcrt_list(){
         }
     }
     closedir(dir);
-    printf("CertificateManage rcrt_list_ size: %d\n",  rcrt_list_.size());
+    std::cout<<"CertificateManage rcrt_list_ size: "<<rcrt_list_.size()<<std::endl;
     printf("CertificateManage init_rcrt_list end\n");
     return COMMON_SUCCESS;
 }

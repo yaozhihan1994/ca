@@ -388,7 +388,7 @@ void Server::Handler(int sock, struct sockaddr_in addr){
             printf("Handler: recv msg timeout\n");
             break;
         }
-	printf("recv: %d\n",len);
+	printf("recv: %d",len);
 	CertOp::print_buffer(buffer,len);
         unsigned char cmd = 0xff;
         unsigned char* data = NULL;
@@ -510,6 +510,7 @@ int Server::deal_with_C0(unsigned char* data, size_t dlen, int sock){
     }
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C0 succ"<<std::endl;
     err:{
         if (msg) {
             free(msg);
@@ -590,6 +591,7 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
     }
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C1 succ"<<std::endl;
     err:{
         if (buffer) {
             free(buffer);
@@ -655,6 +657,7 @@ int Server::deal_with_C2(unsigned char* data, size_t dlen, int sock){
     }
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C2 succ"<<std::endl;
     err:{
         if (buffer) {
             free(buffer);
@@ -709,6 +712,7 @@ int Server::deal_with_C3(unsigned char* data, size_t dlen, int sock){
     }
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C3 succ"<<std::endl;
     err:{
         if (msg) {
             free(msg);
@@ -824,6 +828,7 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     printf("deal_with_C4: report error crt succ\n");
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C4 succ"<<std::endl;
     err:{
         if (error_crt_hash) {
             free(error_crt_hash);
@@ -852,7 +857,7 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
         return COMMON_INVALID_PARAMS;
     }
     int ret = COMMON_ERROR;
-    int i;
+    size_t i;
     unsigned char cmd = 0xc5;
     Certificate_t* ecrt = NULL;
     unsigned char* crls_buffer = NULL;
@@ -930,6 +935,7 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
     }
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C5 succ"<<std::endl;
     err:{
         if (crls_buffer) {
             free(crls_buffer);
@@ -1034,6 +1040,7 @@ int Server::deal_with_C6(unsigned char* data, size_t dlen, int sock){
     }
 
     ret = COMMON_SUCCESS;
+    std::cout<<"thread deal_with_C6 succ"<<std::endl;
     err:{
         if (error_crt_hash) {
             free(error_crt_hash);

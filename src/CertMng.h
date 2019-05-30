@@ -40,10 +40,10 @@ public:
     static int CertificateToFile(const char* filename, Certificate_t *crt);
     static Certificate_t* FileToCertificate(const char* filename);
 
-    static int CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t *crt);
+    static int CertificateToDer(unsigned char** buffer, size_t* blen, Certificate_t* crt);
     static Certificate_t* DerToCertificate(unsigned char* buffer, size_t blen);
 
-    static int CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t *crt);
+    static int CertificateToBuffer(unsigned char** buffer, size_t* blen, Certificate_t* crt);
     static Certificate_t* BufferToCertificate(unsigned char* buffer, size_t blen);
 
     //need free
