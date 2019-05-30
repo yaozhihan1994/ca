@@ -40,7 +40,7 @@ public:
 
     static int CrlToBuffer(unsigned char** buffer, size_t* blen, Crl_t *crl);
     static Crl_t* BufferToCrl(unsigned char* buffer, size_t blen);
-    static int ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs);
+    static int ToBeSignedCrlToDer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs);
 
     static Crl_t* CreateCRL(bool is_first, unsigned char* hashid10, unsigned long crl_start_difftime);
 

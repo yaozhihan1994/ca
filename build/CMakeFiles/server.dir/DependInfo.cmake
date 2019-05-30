@@ -1,10 +1,10 @@
 # The set of languages for which implicit dependencies are needed:
-set(CMAKE_DEPENDS_LANGUAGES
+SET(CMAKE_DEPENDS_LANGUAGES
   "C"
   "CXX"
   )
 # The set of files for implicit dependencies of each language:
-set(CMAKE_DEPENDS_CHECK_C
+SET(CMAKE_DEPENDS_CHECK_C
   "/home/yzh/CA/CA/CA/src/asn/BIT_STRING.c" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/asn/BIT_STRING.c.o"
   "/home/yzh/CA/CA/CA/src/asn/BOOLEAN.c" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/asn/BOOLEAN.c.o"
   "/home/yzh/CA/CA/CA/src/asn/Certificate.c" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/asn/Certificate.c.o"
@@ -86,33 +86,26 @@ set(CMAKE_DEPENDS_CHECK_C
   "/home/yzh/CA/CA/CA/src/asn/xer_encoder.c" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/asn/xer_encoder.c.o"
   "/home/yzh/CA/CA/CA/src/asn/xer_support.c" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/asn/xer_support.c.o"
   )
-set(CMAKE_C_COMPILER_ID "GNU")
-
-# The include file search paths:
-set(CMAKE_C_TARGET_INCLUDE_PATH
-  "../include"
-  "../include/asn"
-  "../include/openssl"
-  )
-set(CMAKE_DEPENDS_CHECK_CXX
+SET(CMAKE_C_COMPILER_ID "GNU")
+SET(CMAKE_DEPENDS_CHECK_CXX
   "/home/yzh/CA/CA/CA/src/CRLMng.cpp" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/CRLMng.cpp.o"
   "/home/yzh/CA/CA/CA/src/CertMng.cpp" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/CertMng.cpp.o"
   "/home/yzh/CA/CA/CA/src/CertOp.cpp" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/CertOp.cpp.o"
   "/home/yzh/CA/CA/CA/src/Message.cpp" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/Message.cpp.o"
   "/home/yzh/CA/CA/CA/src/Server.cpp" "/home/yzh/CA/CA/CA/build/CMakeFiles/server.dir/home/yzh/CA/CA/CA/src/Server.cpp.o"
   )
-set(CMAKE_CXX_COMPILER_ID "GNU")
+SET(CMAKE_CXX_COMPILER_ID "GNU")
+
+# Targets to which this target links.
+SET(CMAKE_TARGET_LINKED_INFO_FILES
+  )
 
 # The include file search paths:
-set(CMAKE_CXX_TARGET_INCLUDE_PATH
+SET(CMAKE_C_TARGET_INCLUDE_PATH
   "../include"
   "../include/asn"
   "../include/openssl"
   )
-
-# Targets to which this target links.
-set(CMAKE_TARGET_LINKED_INFO_FILES
-  )
-
-# Fortran module output directory.
-set(CMAKE_Fortran_TARGET_MODULE_DIR "")
+SET(CMAKE_CXX_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})
+SET(CMAKE_Fortran_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})
+SET(CMAKE_ASM_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})

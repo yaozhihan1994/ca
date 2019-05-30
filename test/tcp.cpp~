@@ -182,12 +182,12 @@ int MessageEncode(unsigned char cmd, unsigned char* data, size_t dlen, unsigned 
 }
 
 void Recv(){
-        unsigned char buffer[1124] = {};
+        unsigned char buffer[2048] = {};
         size_t len = 0;
 while(true){
         unsigned char *data = NULL;
         size_t dlen = 0;
-        if((len = recv(sock, (void*)buffer, 1024, 0)) <= 0){
+        if((len = recv(sock, (void*)buffer, 2048, 0)) <= 0){
              printf("Handler: recv msg fail\n");
              return; 
         }
@@ -241,7 +241,7 @@ unsigned char c4[l];
 memset(c4, 0x02, 1);
 memcpy(c4+1, pcrt, 162);
 memcpy(c4+1+162, ecrt, 162);
-	MessageEncode(0x06, c4, l, &msg, &mlen);
+	MessageEncode(0xc4, c4, l, &msg, &mlen);
 
 	if(send(sock, msg, mlen, 0) == -1){
 		perror("send fail");
@@ -251,7 +251,7 @@ memcpy(c4+1+162, ecrt, 162);
 	free(msg);
 */
 	
-
+/*
 	MessageEncode(0x05, ecrt, 162, &msg, &mlen);
 	if(send(sock, msg, mlen, 0) == -1){
 		perror("send fail");
@@ -259,7 +259,7 @@ memcpy(c4+1+162, ecrt, 162);
 	printf("send: \n");
 	print_buffer(msg, mlen);
 	free(msg);
-
+*/
 	getchar();
 return 0;
 }

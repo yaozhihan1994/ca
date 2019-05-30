@@ -135,23 +135,23 @@ Crl_t* CRLMng::BufferToCrl(unsigned char* buffer, size_t blen){
     return crl;
 }
 
-int CRLMng::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs){
+int CRLMng::ToBeSignedCrlToDer(unsigned char** buffer, size_t* blen, ToBeSignedCrl_t *tbs){
     if (!tbs || !blen) {
         return COMMON_INVALID_PARAMS;
     }
-    asn_enc_rval_t er = uper_encode(&asn_DEF_ToBeSignedCrl, tbs, CertOp::uper_callback, NULL);
+    asn_enc_rval_t er = der_encode(&asn_DEF_ToBeSignedCrl, tbs, CertOp::uper_callback, NULL);
     if(er.encoded == -1) {
-        fprintf(stderr, "CrlToBuffer: uper_encode Cannot encode %s\n", er.failed_type->name);
+        fprintf(stderr, "CrlToBuffer: der_encode Cannot encode %s\n", er.failed_type->name);
         return COMMON_ERROR;
     } 
     else {
-        int len = ((er.encoded+7)/8);
-        unsigned char* buff = (unsigned char*)malloc(er.encoded);
+        int len = er.encoded;
+        unsigned char* buff = (unsigned char*)malloc(len);
         if (!buff) {
             printf("CrlToBuffer: malloc buff fail\n");
             return COMMON_ERROR;
         }
-        asn_enc_rval_t ec = uper_encode_to_buffer(&asn_DEF_ToBeSignedCrl, (void *)tbs, (void*)buff, len);
+        asn_enc_rval_t ec = der_encode_to_buffer(&asn_DEF_ToBeSignedCrl, (void *)tbs, (void*)buff, len);
         if(ec.encoded == -1) {
             fprintf(stderr, "CrlToBuffer: uper_encode_to_buffer Cannot encode %s\n", ec.failed_type->name);
             if (buff) {
@@ -159,7 +159,7 @@ int CRLMng::ToBeSignedCrlToBuffer(unsigned char** buffer, size_t* blen, ToBeSign
             }
             return COMMON_ERROR;
         } else {
-        *blen = ((ec.encoded+7)/8);
+        *blen = ec.encoded;
         *buffer = buff;
         }
         return COMMON_SUCCESS;
@@ -247,8 +247,8 @@ int CRLMng::CrlSign(EC_KEY* key, Crl_t* crl){
     unsigned char cs[32]={};
     unsigned char* sig = NULL;
 
-    if(ToBeSignedCrlToBuffer(&buffer, &blen, &(crl->unsignedCrl)) != COMMON_SUCCESS){
-        printf("CrlSign: ToBeSignedCrlToBuffer fail\n");
+    if(ToBeSignedCrlToDer(&buffer, &blen, &(crl->unsignedCrl)) != COMMON_SUCCESS){
+        printf("CrlSign: ToBeSignedCrlToDer fail\n");
         goto err;
     }
 
