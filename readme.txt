@@ -1,11 +1,15 @@
-//asn1c 0.9.28
+//asn1c version 0.9.28
 asn1c -gen-PER -fincludes-quoted Common2.asn
 
 //build
-source /opt/fsl-imx-fb/4.9.88-2.0.0/environment-setup-cortexa9hf-neon-poky-linux-gnueabi
-sh build.sh
+modify build.sh
+change default_Compiler_environment (ARM, X86, X64)
+./clean.sh
+./build.sh
+server is in build/output/
 
-//run (it will mkdir, if "dirs" not exists)
+
+//run 
 ./server
 
 

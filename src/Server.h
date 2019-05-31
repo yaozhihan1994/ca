@@ -35,7 +35,10 @@
 
 #define SERVER_PORT 6666
 #define SERVER_LISTEN_NUMBER 10
-#define SERVER_DEFAULT_RECV_SIZE 1024
+#define SERVER_DEFAULT_RECV_SIZE 4096
+#define RECV_TIMEOUT_SEC 3
+#define RECV_TIMEOUT_USEC 0
+
 
 class Server{
 
@@ -66,6 +69,8 @@ private:
     static int create_ca_to_file(int ctype, int  stype, unsigned char* sign_crt_hashid8, EC_KEY* sign_key,
                               std::string key_filename, std::string crt_filename, s_CaInfo* ca);
 
+	static std::string get_exe_file_path();
+	static void init_file_path();
     static int sock_fd_;
     static struct sockaddr_in addr_;
 

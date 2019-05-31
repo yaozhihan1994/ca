@@ -4,7 +4,7 @@ ARM="ARM"
 X86="X86"
 X64="X64"
 
-default_Compiler_environment=$X86
+default_Compiler_environment=$X64
 
 if [ $default_Compiler_environment == $ARM ]
 then 
@@ -21,5 +21,14 @@ then
 	cp ./lib/lib64/* ./lib	
 fi
 
-cmake ./build/CMakeLists.txt
-make -C ./build/
+mkdir build
+
+cd build
+
+cmake ..
+
+make clean
+
+make 
+
+cd ..

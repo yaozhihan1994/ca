@@ -44,20 +44,6 @@
 #define UNSIGNED_CRL_HASHID_LENGTH 10
 #define DEVICE_ID_LENGTH 8
 
-#define DEVICE_SERIAL_NUMBER "serial_number/device_serial_number"
-#define ROOTCACRT "crts/rootCA.crt"
-#define ROOTCAKEY "crts/rootCA.key"
-#define SUBROOTCACRT "crts/SubrootCA.crt"
-#define SUBROOTCAKEY "crts/SubrootCA.key"
-#define ECACRT "crts/ECA.crt"
-#define ECAKEY "crts/ECA.key"
-#define PCACRT "crts/PCA.crt"
-#define PCAKEY "crts/PCA.key"
-#define RCACRT "crts/RCA.crt"
-#define RCAKEY "crts/RCA.key"
-#define CCACRT "crts/CCA.crt"
-#define CCAKEY "crts/CCA.key"
-
 #define COMMON_SUCCESS 0
 #define	COMMON_ERROR -1
 #define	COMMON_INVALID_PARAMS -2
@@ -71,8 +57,11 @@
 #define C_CA_CRT 5
 #define P_CRT 6
 #define R_CRT 7
+#define E_CRT 8
 
 #define SM2_USER_ID "1234567812345678"
+#define DEFAULT_DEVICE_SERIAL_NUMBER "00000001"
+#define SUBJECT_INFO_NAME "xingyunhulian"
 
 typedef struct CaInfo{
     EC_KEY* key;
@@ -89,6 +78,30 @@ extern s_CaInfo g_eca;
 extern s_CaInfo g_pca;
 extern s_CaInfo g_rca;
 extern s_CaInfo g_cca;
+extern std::string g_exe_file_path;
+
+extern std::string g_serial_number_file_path;
+extern std::string g_device_sn_file_path;
+extern std::string g_crl_sn_file_path;
+
+extern std::string g_crl_file_path;
+
+extern std::string g_ca_file_path;
+extern std::string g_rootca_crt_file_path;
+extern std::string g_rootca_key_file_path;
+extern std::string g_subrootca_crt_file_path;
+extern std::string g_subrootca_key_file_path;
+extern std::string g_eca_crt_file_path;
+extern std::string g_eca_key_file_path;
+extern std::string g_pca_crt_file_path;
+extern std::string g_pca_key_file_path;
+extern std::string g_rca_crt_file_path;
+extern std::string g_rca_key_file_path;
+extern std::string g_cca_crt_file_path;
+extern std::string g_cca_key_file_path;
+
+extern std::string g_pcrts_file_path;
+extern std::string g_rcrts_file_path;
 
 class CertOp{
 public:

@@ -252,7 +252,7 @@ memcpy(c4+1+162, ecrt, 162);
 */
 	
 
-	MessageEncode(0x05, ecrt, 162, &msg, &mlen);
+	MessageEncode(0xc5, ecrt, 162, &msg, &mlen);
 	if(send(sock, msg, mlen, 0) == -1){
 		perror("send fail");
 	}

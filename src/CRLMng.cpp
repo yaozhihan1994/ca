@@ -19,7 +19,7 @@ extern s_CaInfo g_eca;
 extern s_CaInfo g_pca;
 extern s_CaInfo g_rca;
 extern s_CaInfo g_cca;
-
+extern std::string g_crl_file_path;
 std::thread CRLMng::crl_manage_thread_;
 std::map<std::string, std::array<unsigned char, 10>> CRLMng::crl_map_;
 std::mutex CRLMng::crl_mutex_;
@@ -334,7 +334,7 @@ void CRLMng::crl_manage(){
                 std::string name(i->first);
                 if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < CertOp::get_time_now()){
                     crl_map_.erase(i++);
-                    name = CRL_FILENAME + name;
+                    name = g_crl_file_path + name;
                     remove(name.c_str());
                 }else{
                     i++;
@@ -350,14 +350,14 @@ void CRLMng::crl_manage(){
 
 int CRLMng::init_crl_map(){
     printf("CrlManage init_crl_map start\n");
-    DIR* dir = opendir(CRL_FILENAME);
+    DIR* dir = opendir(g_crl_file_path.c_str());
     dirent* p = NULL;
     crl_map_.clear();
     crl_serial_number_ = get_crl_serial_number();
     while((p = readdir(dir)) != NULL){
         if(p->d_name[0] != '.'){
             std::string map_name(p->d_name);
-            std::string file_name(CRL_FILENAME);
+            std::string file_name(g_crl_file_path);
             file_name += map_name;
             Crl_t* crl = NULL;
             if ((crl = CRLMng::FileToCrl(file_name.c_str())) == NULL) {
@@ -384,7 +384,7 @@ int CRLMng::init_crl_map(){
             return COMMON_ERROR;
         }
         //xer_fprint(stdout, &asn_DEF_Crl, crl);
-        std::string file_name(CRL_FILENAME);
+        std::string file_name(g_crl_file_path);
         std::string map_name;
         map_name = CertOp::UnsignedLongToString(CertOp::get_time_by_diff(CertOp::get_difftime_by_years(CA_CRT_VALIDITY_PERIOD_YEARS))) 
                          +"_" + CertOp::UnsignedLongToString(crl->unsignedCrl.crlSerial);
@@ -436,7 +436,7 @@ int CRLMng::get_crls(unsigned char** buffer, size_t* blen, size_t* crl_num){
         size_t crl_buffer_size = 0;
         unsigned long crl_end_time = 0;
         crl_end_time = strtoul(name.substr(0, name.find_first_of("_")).c_str(), NULL ,10);
-        name = CRL_FILENAME + name;
+        name = g_crl_file_path + name;
         if (crl_end_time > CertOp::get_time_now()) {
             if (CertOp::FileToBuffer(name.c_str(), &crl_buffer, &crl_buffer_size) != COMMON_SUCCESS) {
                 printf("get_crls: FileToBuffer fail\n");
@@ -474,9 +474,9 @@ int CRLMng::check_reported_crl(unsigned char* hashid10){
 unsigned long CRLMng::get_crl_serial_number(){
     unsigned long sn = 0;
     std::fstream fs;
-    fs.open(CRL_SERIAL_NUMBER, std::ios::in);
+    fs.open(g_crl_sn_file_path, std::ios::in);
     if (!fs) {
-        printf("set_crl_serial_number: open file: %s Failed!\n", CRL_SERIAL_NUMBER);
+        std::cout<<"get_crl_serial_number: open file: "<<g_crl_sn_file_path<<" Failed!\n";
         return sn;
     }
     std::string s;
@@ -491,9 +491,9 @@ unsigned long CRLMng::get_crl_serial_number(){
 int CRLMng::set_crl_serial_number(unsigned long sn){
     std::lock_guard<std::mutex> lck(crl_serial_mutex_);
     std::fstream fs;
-    fs.open(CRL_SERIAL_NUMBER, std::ios::out);
+    fs.open(g_crl_sn_file_path, std::ios::out);
     if (!fs) {
-        printf("set_crl_serial_number: open file: %s Failed!\n", CRL_SERIAL_NUMBER);
+		std::cout<<"set_crl_serial_number: open file: "<<g_crl_sn_file_path<<" Failed!\n";
         return COMMON_ERROR;
     }
     fs<<sn;

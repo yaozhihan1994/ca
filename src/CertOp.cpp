@@ -19,6 +19,31 @@ s_CaInfo g_eca;
 s_CaInfo g_pca;
 s_CaInfo g_rca;
 s_CaInfo g_cca;
+std::string g_exe_file_path = "";
+
+std::string g_serial_number_file_path = "";
+std::string g_device_sn_file_path = "";
+std::string g_crl_sn_file_path = "";
+
+std::string g_crl_file_path = "";
+
+std::string g_ca_file_path = "";
+std::string g_rootca_crt_file_path = "";
+std::string g_rootca_key_file_path = "";
+std::string g_subrootca_crt_file_path = "";
+std::string g_subrootca_key_file_path = "";
+std::string g_eca_crt_file_path = "";
+std::string g_eca_key_file_path = "";
+std::string g_pca_crt_file_path = "";
+std::string g_pca_key_file_path = "";
+std::string g_rca_crt_file_path = "";
+std::string g_rca_key_file_path = "";
+std::string g_cca_crt_file_path = "";
+std::string g_cca_key_file_path = "";
+
+std::string g_pcrts_file_path = "";
+std::string g_rcrts_file_path = "";
+
 
 CertOp::CertOp(){
 }
@@ -841,9 +866,9 @@ bool CertOp::VerifyDeviceSerialNumber(char* serial_number, size_t slen){
         printf("VerifyDeviceSerialNumber: INVALID_PARAMS Failed!\n");
         return COMMON_INVALID_PARAMS;
     }
-    std::fstream fs(DEVICE_SERIAL_NUMBER);
+    std::fstream fs(g_device_sn_file_path);
     if (!fs) {
-        printf("VerifyDeviceSerialNumber: open file: %s Failed!\n", DEVICE_SERIAL_NUMBER);
+        printf("VerifyDeviceSerialNumber: open file: %s Failed!\n", g_device_sn_file_path.c_str());
         return COMMON_ERROR;
     }
     char sn[81];

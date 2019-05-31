@@ -19,6 +19,8 @@ extern s_CaInfo g_eca;
 extern s_CaInfo g_pca;
 extern s_CaInfo g_rca;
 extern s_CaInfo g_cca;
+extern std::string g_pcrts_file_path;
+extern std::string g_rcrts_file_path;
 
 std::list<std::string> CertMng::pcrt_list_;
 std::mutex CertMng::pcrt_mutex_;
@@ -461,7 +463,7 @@ void CertMng::pcrt_manage(){
                 std::string name(*i);
                 if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < CertOp::get_time_now()){
                     pcrt_list_.erase(i++);
-                    name = PCRTS + name;
+                    name = g_pcrts_file_path + name;
                     remove(name.c_str());
                 }else{
                     i++;
@@ -491,7 +493,7 @@ void CertMng::rcrt_manage(){
                 std::string name(*i);
                 if (strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) < CertOp::get_time_now()){
                     rcrt_list_.erase(i++);
-                    name = RCRTS + name;
+                    name = g_rcrts_file_path + name;
                     remove(name.c_str());
                 }else{
                     i++;
@@ -518,7 +520,7 @@ int CertMng::get_pcrt_and_pkey(unsigned char** buffer, size_t* blen){
         std::string name = *i;
         //end_time > now ? 
         if ( strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) > CertOp::get_time_now() ) {
-            name = PCRTS + name;
+            name = g_pcrts_file_path + name;
             if(CertOp::FileToBuffer(name.c_str(), &buff, &buff_len) != COMMON_SUCCESS){
                 printf("CertificateManage: get_pcrt_and_pkey FileToBuffer fail\n");
                 break;
@@ -556,7 +558,7 @@ int CertMng::get_rcrt_and_rkey(unsigned char** buffer, size_t* blen){
         std::string name = *i;
         //end_time > now ? 
         if ( strtoul(name.substr(0, name.find("_")).c_str(), NULL, 10) > CertOp::get_time_now() ) {
-            name = RCRTS + name;
+            name = g_rcrts_file_path + name;
             if(CertOp::FileToBuffer(name.c_str(), &buff, &buff_len) != COMMON_SUCCESS){
                 printf("CertificateManage: get_rcrt_and_rkey FileToBuffer fail\n");
                 break;
@@ -601,7 +603,7 @@ void CertMng::Start(){
 
 int CertMng::init_pcrt_list(){
     printf("CertificateManage init_pcrt_list start\n");
-    DIR* dir = opendir(PCRTS);
+    DIR* dir = opendir(g_pcrts_file_path.c_str());
     dirent* p = NULL;
     pcrt_list_.clear();
     while((p = readdir(dir)) != NULL){
@@ -620,7 +622,7 @@ int CertMng::init_pcrt_list(){
 
 int CertMng::init_rcrt_list(){
     printf("CertificateManage init_rcrt_list start\n");
-    DIR* dir = opendir(RCRTS);
+    DIR* dir = opendir(g_rcrts_file_path.c_str());
     dirent* p = NULL;
     rcrt_list_.clear();
     while((p = readdir(dir)) != NULL){
@@ -648,7 +650,7 @@ int CertMng::create_a_pcrt(){
     unsigned char* buffer = NULL;
     size_t blen = 0;
     unsigned long pcrt_end_gmtime = 0;
-    std::string crt_name(PCRTS);
+    std::string crt_name(g_pcrts_file_path);
     std::string file_name;
 
     if ((pkey = CertOp::CreateSm2KeyPair()) == NULL) {
@@ -739,7 +741,7 @@ int CertMng::create_a_rcrt(){
     unsigned char* buffer = NULL;
     size_t blen = 0;
     unsigned long rcrt_end_gmtime = 0;
-    std::string crt_name(RCRTS);
+    std::string crt_name(g_rcrts_file_path);
     std::string file_name;
 
     if ((rkey = CertOp::CreateSm2KeyPair()) == NULL) {

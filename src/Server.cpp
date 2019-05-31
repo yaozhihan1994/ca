@@ -32,30 +32,35 @@ Server::~Server(){
 }
 
 int Server::Init(){
+	if((g_exe_file_path = get_exe_file_path()) == ""){
+		printf("Init get_exe_file_path fail\n");
+	}
+	std::cout<<"Init get_exe_file_path succ file path:"<<g_exe_file_path<<std::endl;
+	init_file_path();
     if (check_ca() == COMMON_SUCCESS) {
         printf("Init check_ca succ\n");
         printf("Init init_ca start\n");
-        if (init_ca(ROOTCAKEY, ROOTCACRT, &g_rootca) != COMMON_SUCCESS) {
+        if (init_ca(g_rootca_key_file_path, g_rootca_crt_file_path, &g_rootca) != COMMON_SUCCESS) {
             printf("Init init_rootca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(SUBROOTCAKEY, SUBROOTCACRT, &g_subrootca) != COMMON_SUCCESS) {
+        if (init_ca(g_subrootca_key_file_path, g_subrootca_crt_file_path, &g_subrootca) != COMMON_SUCCESS) {
             printf("Init init_subrootca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(ECAKEY, ECACRT, &g_eca) != COMMON_SUCCESS) {
+        if (init_ca(g_eca_key_file_path, g_eca_crt_file_path, &g_eca) != COMMON_SUCCESS) {
             printf("Init init_eca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(PCAKEY, PCACRT, &g_pca) != COMMON_SUCCESS) {
+        if (init_ca(g_pca_key_file_path, g_pca_crt_file_path, &g_pca) != COMMON_SUCCESS) {
             printf("Init init_pca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(RCAKEY, RCACRT, &g_rca) != COMMON_SUCCESS) {
+        if (init_ca(g_rca_key_file_path, g_rca_crt_file_path, &g_rca) != COMMON_SUCCESS) {
             printf("Init init_rca fail\n");
             return COMMON_ERROR;
         }
-        if (init_ca(CCAKEY, CCACRT, &g_cca) != COMMON_SUCCESS) {
+        if (init_ca(g_cca_key_file_path, g_cca_crt_file_path, &g_cca) != COMMON_SUCCESS) {
             printf("Init init_cca fail\n");
             return COMMON_ERROR;
         }
@@ -63,52 +68,46 @@ int Server::Init(){
     }else{
         printf("Init check_ca fail\n");
         printf("Init create_ca start\n");
-
-        const char* ca_crt_filename = "crts";
-        const char* pcrt_filename = "pcrts";
-        const char* rcrt_filename = "rcrts";    
-        const char* crl_filename = "crls";
-        const char* serial_number_filename = "serial_number";
-        if (access(ca_crt_filename, F_OK) == -1) {
-            if (mkdir(ca_crt_filename, 493) == -1) {
+        if (access(g_ca_file_path.c_str(), F_OK) == -1) {
+            if (mkdir(g_ca_file_path.c_str(), 493) == -1) {
                 return COMMON_ERROR;
             }
         }
-        if (access(pcrt_filename, F_OK) == -1) {
-            if (mkdir(pcrt_filename, 493) == -1) {
+        if (access(g_pcrts_file_path.c_str(), F_OK) == -1) {
+            if (mkdir(g_pcrts_file_path.c_str(), 493) == -1) {
                 return COMMON_ERROR;
             }
         }
-        if (access(rcrt_filename, F_OK) == -1) {
-            if (mkdir(rcrt_filename, 493) == -1) {
+        if (access(g_rcrts_file_path.c_str(), F_OK) == -1) {
+            if (mkdir(g_rcrts_file_path.c_str(), 493) == -1) {
                 return COMMON_ERROR;
             }
         }
-        if (access(crl_filename, F_OK) == -1) {
-            if (mkdir(crl_filename, 493) == -1) {
+        if (access(g_crl_file_path.c_str(), F_OK) == -1) {
+            if (mkdir(g_crl_file_path.c_str(), 493) == -1) {
                 return COMMON_ERROR;
             }
         }
-        if (access(serial_number_filename, F_OK) == -1) {
-            if (mkdir(serial_number_filename, 493) == -1) {
+        if (access(g_serial_number_file_path.c_str(), F_OK) == -1) {
+            if (mkdir(g_serial_number_file_path.c_str(), 493) == -1) {
                 return COMMON_ERROR;
             }
         }
-        if (access(CRL_SERIAL_NUMBER, F_OK) == -1) {
+        if (access(g_crl_sn_file_path.c_str(), F_OK) == -1) {
             std::fstream fs;
-            fs.open(CRL_SERIAL_NUMBER, std::fstream::out);
+            fs.open(g_crl_sn_file_path, std::fstream::out);
             if (!fs) {
-                printf("Init: create file: %s Failed!\n", CRL_SERIAL_NUMBER);
+                std::cout<<"Init: create file: "<<g_crl_sn_file_path<<" Failed!\n";
                 return COMMON_ERROR;
             }
             fs<<0;
             fs.close();
         }
-        if (access(DEVICE_SERIAL_NUMBER, F_OK) == -1) {
+        if (access(g_device_sn_file_path.c_str(), F_OK) == -1) {
             std::fstream fs;
-            fs.open(DEVICE_SERIAL_NUMBER, std::fstream::out);
+            fs.open(g_device_sn_file_path, std::fstream::out);
             if (!fs) {
-                printf("Init: create file: %s Failed!\n", DEVICE_SERIAL_NUMBER);
+                std::cout<<"Init: create file: "<<g_device_sn_file_path<<" Failed!\n";
                 return COMMON_ERROR;
             }
             fs<<DEFAULT_DEVICE_SERIAL_NUMBER;
@@ -124,21 +123,62 @@ int Server::Init(){
     return COMMON_SUCCESS;
 }
 
+std::string Server::get_exe_file_path(){
+	char buf[1024];
+	int count;
+	std::string s;
+	count = readlink( "/proc/self/exe", buf, 1024);
+	if ( count < 0 || count >= 1024 ){ 
+		printf( "get_exe_file_path failed\n" );
+		return s;
+	} 
+	buf[count] = '\0';
+	s = buf;
+	s = s.substr(0, s.find_last_of("/")+1);
+	return s;
+}
+
+void Server::init_file_path(){
+	g_serial_number_file_path = g_exe_file_path + "serial_number/";
+	
+	g_device_sn_file_path = g_exe_file_path + "serial_number/device_serial_number";
+	g_crl_sn_file_path = g_exe_file_path + "serial_number/crl_serial_number";
+
+	g_crl_file_path = g_exe_file_path + "crls/";
+
+	g_pcrts_file_path = g_exe_file_path + "pcrts/";
+	g_rcrts_file_path = g_exe_file_path + "rcrts/";
+			
+	g_ca_file_path = g_exe_file_path + "ca/";
+	g_rootca_crt_file_path = g_exe_file_path + "ca/rootca.crt";
+	g_rootca_key_file_path = g_exe_file_path + "ca/rootca.key";
+	g_subrootca_crt_file_path = g_exe_file_path + "ca/subrootca.crt";
+	g_subrootca_key_file_path = g_exe_file_path + "ca/subrootca.key";
+	g_eca_crt_file_path = g_exe_file_path + "ca/eca.crt";
+	g_eca_key_file_path = g_exe_file_path + "ca/eca.key";
+	g_pca_crt_file_path = g_exe_file_path + "ca/pca.crt";
+	g_pca_key_file_path = g_exe_file_path + "ca/pca.key";
+	g_rca_crt_file_path = g_exe_file_path + "ca/rca.crt";
+	g_rca_key_file_path = g_exe_file_path + "ca/rca.key";
+	g_cca_crt_file_path = g_exe_file_path + "ca/cca.crt";
+	g_cca_key_file_path = g_exe_file_path + "ca/cca.key";
+}
+
 int Server::check_ca(){
     //check ca crt and key file
     std::string filename[12];
-    filename[0] = ROOTCACRT;
-    filename[1] = ROOTCAKEY;
-    filename[2] = SUBROOTCACRT;
-    filename[3] = SUBROOTCAKEY;
-    filename[4] = ECACRT;
-    filename[5] = ECAKEY;
-    filename[6] = PCACRT;
-    filename[7] = PCAKEY;
-    filename[8] = RCACRT;
-    filename[9] = RCAKEY;
-    filename[10] = CCACRT;
-    filename[11] = CCAKEY;
+    filename[0] = g_rootca_crt_file_path;
+    filename[1] = g_rootca_key_file_path;
+    filename[2] = g_subrootca_crt_file_path;
+    filename[3] = g_subrootca_key_file_path;
+    filename[4] = g_eca_crt_file_path;
+    filename[5] = g_eca_key_file_path;
+    filename[6] = g_pca_crt_file_path;
+    filename[7] = g_pca_key_file_path;
+    filename[8] = g_rca_crt_file_path;
+    filename[9] = g_rca_key_file_path;
+    filename[10] = g_cca_crt_file_path;
+    filename[11] = g_cca_key_file_path;
     for (int i=0; i<12; i++) {
         if (access(filename[i].c_str(), F_OK) == -1) {
             printf("Check CA file: %s not exists\n", filename[i].c_str());
@@ -193,37 +233,37 @@ int Server::init_ca(std::string key_filename, std::string crt_filename, s_CaInfo
 
 int Server::create_ca(){
     //create root ca
-    if (create_ca_to_file(ROOT_CA_CRT, SubjectType_rootCa, NULL, NULL, ROOTCAKEY, ROOTCACRT, &g_rootca) != COMMON_SUCCESS) {
+    if (create_ca_to_file(ROOT_CA_CRT, SubjectType_rootCa, NULL, NULL, g_rootca_key_file_path, g_rootca_crt_file_path, &g_rootca) != COMMON_SUCCESS) {
         printf("create_ca create_ca_to_file root ca fail\n");
         return COMMON_ERROR;
     }
     //create subroot ca
     if (create_ca_to_file(SUBROOT_CA_CRT, SubjectType_rootCa, 
-                          g_rootca.hashid8, g_rootca.key, SUBROOTCAKEY, SUBROOTCACRT, &g_subrootca) != COMMON_SUCCESS) {
+                          g_rootca.hashid8, g_rootca.key, g_subrootca_key_file_path, g_subrootca_crt_file_path, &g_subrootca) != COMMON_SUCCESS) {
         printf("create_ca create_ca_to_file subroot ca fail\n");
         return COMMON_ERROR;
     }
     //create e ca
     if (create_ca_to_file(E_CA_CRT, SubjectType_enrollmentAuthority, 
-                          g_subrootca.hashid8, g_subrootca.key, ECAKEY, ECACRT, &g_eca) != COMMON_SUCCESS) {
+                          g_subrootca.hashid8, g_subrootca.key, g_eca_key_file_path, g_eca_crt_file_path, &g_eca) != COMMON_SUCCESS) {
         printf("create_ca create_ca_to_file e ca fail\n");
         return COMMON_ERROR;
     }
     //create p ca
     if (create_ca_to_file(P_CA_CRT, SubjectType_authorizationAuthority, 
-                          g_subrootca.hashid8, g_subrootca.key, PCAKEY, PCACRT, &g_pca) != COMMON_SUCCESS) {
+                          g_subrootca.hashid8, g_subrootca.key, g_pca_key_file_path, g_pca_crt_file_path, &g_pca) != COMMON_SUCCESS) {
         printf("create_ca create_ca_to_file p ca fail\n");
         return COMMON_ERROR;
     }
     //create r ca
     if (create_ca_to_file(R_CA_CRT, SubjectType_authorizationAuthority, 
-                          g_subrootca.hashid8, g_subrootca.key, RCAKEY, RCACRT, &g_rca) != COMMON_SUCCESS) {
+                          g_subrootca.hashid8, g_subrootca.key, g_rca_key_file_path, g_rca_crt_file_path, &g_rca) != COMMON_SUCCESS) {
         printf("create_ca create_ca_to_file r ca fail\n");
         return COMMON_ERROR;
     }
     //create c ca
     if (create_ca_to_file(C_CA_CRT, SubjectType_crlSigner, 
-                          g_subrootca.hashid8, g_subrootca.key, CCAKEY, CCACRT, &g_cca) != COMMON_SUCCESS) {
+                          g_subrootca.hashid8, g_subrootca.key, g_cca_key_file_path, g_cca_crt_file_path, &g_cca) != COMMON_SUCCESS) {
         printf("create_ca create_ca_to_file c ca fail\n");
         return COMMON_ERROR;
     }
@@ -377,7 +417,7 @@ void Server::Handler(int sock, struct sockaddr_in addr){
     printf("Handler: connected , recv msg......\n");
     unsigned char buffer[SERVER_DEFAULT_RECV_SIZE] = {};
     int len = 0;
-    struct timeval timeout={3,0};//3s
+    struct timeval timeout={RECV_TIMEOUT_SEC,RECV_TIMEOUT_USEC};//3s
     int ret=setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
     if (ret == -1) {
          printf("Handler: setsockopt fail\n");
@@ -559,7 +599,7 @@ int Server::deal_with_C1(unsigned char* data, size_t dlen, int sock){
         goto err;
     }
 
-    ecrt = CertMng::CreateCertificate(E_CA_CRT, SubjectType_enrollmentCredential, pub_key, g_eca.hashid8, g_eca.key);
+    ecrt = CertMng::CreateCertificate(E_CRT, SubjectType_enrollmentCredential, pub_key, g_eca.hashid8, g_eca.key);
     if (!ecrt) {
         printf("deal_with_C1: CreateCertificate ecrt fail\n");
         goto err;
@@ -814,7 +854,7 @@ int Server::deal_with_C4(unsigned char* data, size_t dlen, int sock){
     name = name + "_" + CertOp::UnsignedLongToString(crl->unsignedCrl.crlSerial);
 
     CRLMng::set_crl_map(name, error_crt_hash+32-10);
-    name =  CRL_FILENAME+name;
+    name =  g_crl_file_path+name;
 
     if (CRLMng::CrlToFile(name.c_str(), crl) != COMMON_SUCCESS) {
         printf("deal_with_C4: CrlToFile fail\n");
@@ -863,7 +903,6 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
     unsigned char* crls_buffer = NULL;
     size_t crls_blen = 0;
     size_t crls_num = 0;
-    int package = 0;
     unsigned char *package_uc = NULL;
     unsigned char crls_package_buff[10*CRL_MAX_LENGTH + 4];
     int package_sum = 0;
@@ -873,7 +912,7 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
     size_t num = 0; 
     unsigned char* msg = NULL;
     size_t mlen = 0;
-
+	int tmp = 1;
     if((ecrt = CertMng::BufferToCertificate(data, dlen)) == NULL){
         printf("deal_with_C5: BufferToCertificate fail\n");
         goto err;
@@ -890,18 +929,17 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
 
 //  CertOp::print_buffer(crls_buffer, crls_blen);
 
-    package = (crls_num%10 == 0)? (int)(crls_num/10) : (int)(crls_num/10)+1;
-    package_sum = package;
+    package_sum = (crls_num%10 == 0)? (int)(crls_num/10) : (int)(crls_num/10)+1;
     package_sum_uc = CertOp::IntToUnsignedChar(package_sum);
     if (!package_sum_uc) {
         printf("deal_with_C5: IntToUnsignedChar fail\n");
         goto err;
     }
 
-    while (package > 0) {
+    while (tmp <= package_sum) {
         memcpy(crls_package_buff+crl_pack_tmp, package_sum_uc + 2, 2);
         crl_pack_tmp+=2;
-        package_uc = CertOp::IntToUnsignedChar(package);
+        package_uc = CertOp::IntToUnsignedChar(tmp);
         if (!package_uc) {
             printf("deal_with_C5: IntToUnsignedChar fail\n");
             goto err;
@@ -910,7 +948,7 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
         crl_pack_tmp+=2;
         free(package_uc);
 
-        if (package != 1) num =10;
+        if (tmp != package_sum) num =10;
         else num = crls_num;
 
         for (i = 0; i<num; i++) {
@@ -929,7 +967,7 @@ int Server::deal_with_C5(unsigned char* data, size_t dlen, int sock){
         }
         free(msg);
         crl_pack_tmp = 0;
-        package--;
+        tmp++;
         crls_num = crls_num - num;
         usleep(1);
     }

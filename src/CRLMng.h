@@ -25,8 +25,6 @@
 #include "asn/Crl.h"
 #include "CertOp.h"
 
-#define CRL_FILENAME "crls/"
-#define CRL_SERIAL_NUMBER "serial_number/crl_serial_number"
 #define CRL_VERSION 1
 #define CRL_MAX_LENGTH 111
 
